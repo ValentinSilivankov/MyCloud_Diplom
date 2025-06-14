@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import moment from 'moment'
 import { useEffect, useState } from 'react'
 import { Alert, Button, Card, Flex, message, Table, TableProps, Tooltip } from 'antd'
 import {
   CloudDownloadOutlined,
   DeleteOutlined,
-  ShareAltOutlined,
-  // FileSearchOutlined
+  ShareAltOutlined
 } from '@ant-design/icons'
 import { usersState } from '../redux/slices/usersSlice'
 import {
@@ -14,296 +14,236 @@ import {
   filesState
 } from '../redux/slices/filesSlice'
 import { formatFileSize, useAppDispatch, useAppSelector } from '../hooks'
-import { IChangeFileData, IDownloadFileData, IFile } from '../models'
+import { IChangeFileData, IDownloadFileData, IFile, IFileLinkResponse } from '../models'
 import DownloadSection from '../components/DownloadSection/DownloadSection'
 import { changeFile, deleteFile, downloadFile, getFileLink, getFilesList } from '../services/fileServices'
 
-function copyToClipboard(special_link: string) {
-  const textArea = document.createElement('textarea');
-  textArea.value = special_link;
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand('copy');
-  document.body.removeChild(textArea);
-  console.log('Ссылка скопирована в буфер обмена');
+const copyToClipboard = (text: string): void => {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      console.log('Ссылка скопирована в буфер обмена')
+    })
+    .catch(err => {
+      console.error('Ошибка копирования:', err)
+    })
 }
 
 export default function StoragePage() {
-  const { currentUser, storageOwner } = useAppSelector(usersState);
-  const { filesList, error } = useAppSelector(filesState);
+  const { currentUser, storageOwner } = useAppSelector(usersState)
+  const { filesList, error } = useAppSelector(filesState)
   
-  const [, setShowAlert] = useState(false);
-  const dispatch = useAppDispatch(); 
+  const [showAlert, setShowAlert] = useState(false)
+  const dispatch = useAppDispatch()
 
   useEffect(() => {
-    dispatch(getFilesList(storageOwner?.username));
+    if (storageOwner?.username) {
+      dispatch(getFilesList(storageOwner.username))
+    }
 
     return () => {
-      dispatch(clearFilesList());
-      dispatch(clearError());
-    };
-  }, [dispatch, storageOwner?.username]);
+      dispatch(clearFilesList())
+      dispatch(clearError())
+    }
+  }, [dispatch, storageOwner?.username])
 
   useEffect(() => {
-    if (error) {
-        setShowAlert(true);
-    } else {
-        setShowAlert(false);
-    }
-  }, [error]);
+    setShowAlert(!!error)
+  }, [error])
 
   const handleEditFileName = (id: number, file_name: string) => {
-    const newFileName = prompt(
-      'Введите новое имя файла:',
-      file_name
-    );
+    const newFileName = prompt('Введите новое имя файла:', file_name)
+    if (!newFileName) return
 
-    if (newFileName) {
-      const newFileData: IChangeFileData = { id, file_name: newFileName };
+    const newFileData: IChangeFileData = { id, file_name: newFileName }
 
-      dispatch(changeFile(newFileData))
-        .unwrap()
-        .then(() => {
-          console.log('Файл переименован');
-          dispatch(getFilesList(storageOwner?.username));
-        })
-        .catch((error) => {
-          console.log(error)
-          message.error({
-            content: 'Ошибка переименования: ' + error,
-            duration: 2,
-          });
-        });
-    }
-  };
+    dispatch(changeFile(newFileData))
+      .unwrap()
+      .then(() => {
+        message.success('Файл переименован')
+        refreshFileList()
+      })
+      .catch((error: Error) => {
+        showError('Ошибка переименования:', error)
+      })
+  }
 
   const handleEditFileComment = (id: number, comment: string) => {
-    const newFileComment = prompt(
-      'Введите новый комментарий к файлу:',
-      comment
-    );
+    const newFileComment = prompt('Введите новый комментарий:', comment)
+    if (!newFileComment) return
 
-    if (newFileComment) {
-      const newFileData: IChangeFileData = { id, comment: newFileComment };
+    const newFileData: IChangeFileData = { id, comment: newFileComment }
 
-      dispatch(changeFile(newFileData))
-        .unwrap()
-        .then(() => {
-          console.log('Комментарий к файлу изменён');
-          dispatch(getFilesList(storageOwner?.username));
-        })
-        .catch((error) => {
-          console.log(error);
-          message.error({
-            content: 'Ошибка изменения комментария: ' + error,
-            duration: 2,
-          });
-        })
-    }
-  };
-
-  // const handleFileSearchOutlined = (id:number) => {
-  //   dispatch(getFileLink(id))
-  // .unwrap()
-  // .then((data) => {
-  //   console.log('Специальная ссылка на файл получена');
-  //   copyToClipboard(data.special_link);
-  //   message.success({
-  //     content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
-  //     duration: 2,
-  //   });
-  // })
-  // .catch((error) => {
-  //   console.log(error);
-  //   message.error({
-  //     content: 'Ошибка получения специальной ссылки на файл: ' + error,
-  //     duration: 2,
-  //   });
-  // });
-  // }
+    dispatch(changeFile(newFileData))
+      .unwrap()
+      .then(() => {
+        message.success('Комментарий изменён')
+        refreshFileList()
+      })
+      .catch((error: Error) => {
+        showError('Ошибка изменения комментария:', error)
+      })
+  }
 
   const handleDownloadFile = (id: number, file_name: string) => {
-    const fileData : IDownloadFileData = { id, file_name };
+    const fileData: IDownloadFileData = { id, file_name }
 
     dispatch(downloadFile(fileData))
       .unwrap()
       .then(() => {
-        console.log('Файл успешно скачан');
-        message.success({
-          content: 'Файл успешно скачан',
-          duration: 2,
-        });
-        dispatch(getFilesList(storageOwner?.username));
+        message.success('Файл скачан')
+        refreshFileList()
       })
-      .catch((error) => {
-        console.log(error);
-        message.error({
-          content: 'Ошибка скачивания файла: ' + error,
-          duration: 2,
-        });
+      .catch((error: Error) => {
+        showError('Ошибка скачивания:', error)
       })
-  };
+  }
 
   const handleGetFileLink = (id: number) => {
     dispatch(getFileLink(id))
       .unwrap()
-      .then((data) => {
-        console.log('Специальная ссылка на файл получена');
-        copyToClipboard(data.special_link);
-        message.success({
-          content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
-          duration: 2,
-        });
+      .then((data: IFileLinkResponse) => {
+        copyToClipboard(data.special_link)
+        message.success('Ссылка скопирована в буфер')
       })
-      .catch((error) => {
-        console.log(error);
-        message.error({
-          content: 'Ошибка получения специальной ссылки на файл: ' + error,
-          duration: 2,
-        });
-      });
-  };
+      .catch((error: Error) => {
+        showError('Ошибка получения ссылки:', error)
+      })
+  }
 
   const handleDeleteFile = (id: number) => {
-    if (confirm('Вы действительно хотите удалить файл?')) {
-      dispatch(deleteFile(id))
-        .unwrap()
-        .then(() => {
-          console.log('Файл успешно удалён');
-          message.success({
-            content: 'Файл успешно удалён',
-            duration: 2,
-          });
-          dispatch(getFilesList(storageOwner?.username));
-        })
-        .catch((error) => {
-          console.log(error);
-          message.error({
-            content: 'Ошибка удаления файла: ' + error,
-            duration: 2,
-          });
-        });
+    if (!confirm('Вы действительно хотите удалить файл?')) return
+
+    dispatch(deleteFile(id))
+      .unwrap()
+      .then(() => {
+        message.success('Файл удалён')
+        refreshFileList()
+      })
+      .catch((error: Error) => {
+        showError('Ошибка удаления:', error)
+      })
+  }
+
+  const refreshFileList = () => {
+    if (storageOwner?.username) {
+      dispatch(getFilesList(storageOwner.username))
     }
-  };
+  }
+
+  const showError = (context: string, error: Error) => {
+    console.error(context, error)
+    message.error({
+      content: context + ' ' + error.message,
+      duration: 2,
+    })
+  }
 
   const columns: TableProps<IFile>['columns'] = [
     {
       title: 'Имя файла',
       dataIndex: 'file_name',
       key: 'file_name',
-      render: (text, record) => (
-        <Tooltip placement='topLeft' title='Нажмите для редактирования'>
+      render: (text: string, record: IFile) => (
+        <Tooltip title="Нажмите для редактирования">
           <a onClick={() => handleEditFileName(record.id, record.file_name)}>
             {text}
           </a>
         </Tooltip>
       ),
       sorter: (a, b) => a.file_name.localeCompare(b.file_name),
-      showSorterTooltip: false,
     },
     {
       title: 'Комментарий',
       dataIndex: 'comment',
       key: 'comment',
-      render: (text, record) => (
-        <Tooltip placement='topLeft' title='Нажмите для редактирования'>
+      render: (text: string, record: IFile) => (
+        <Tooltip title="Нажмите для редактирования">
           <a onClick={() => handleEditFileComment(record.id, record.comment)}>
-            {text}
+            {text || '-'}
           </a>
         </Tooltip>
       ),
-      sorter: (a, b) => a.comment.localeCompare(b.comment),
-      showSorterTooltip: false,
+      sorter: (a, b) => (a.comment || '').localeCompare(b.comment || ''),
     },
     {
       title: 'Размер',
       dataIndex: 'size',
       key: 'size',
-      render: (text) => formatFileSize(text),
+      render: (size: number) => formatFileSize(size),
       sorter: (a, b) => a.size - b.size,
-      showSorterTooltip: false,
     },
     {
       title: 'Дата загрузки',
       dataIndex: 'uploaded',
       key: 'uploaded',
-      render: (text) => moment(text).format('DD.MM.YYYY'),
+      render: (date: string) => moment(date).format('DD.MM.YYYY'),
       sorter: (a, b) => a.uploaded.localeCompare(b.uploaded),
-      showSorterTooltip: false,
     },
     {
       title: 'Дата скачивания',
       dataIndex: 'downloaded',
       key: 'downloaded',
-      render: (text) => text ? moment(text).format('DD.MM.YYYY') : '',
-      sorter: (a, b) => {
-        const aDownloaded = a.downloaded || '';
-        const bDownloaded = b.downloaded || '';
-        return aDownloaded.localeCompare(bDownloaded);
-      },
-      showSorterTooltip: false,
+      render: (date: string | null) => date ? moment(date).format('DD.MM.YYYY') : '-',
+      sorter: (a, b) => (a.downloaded || '').localeCompare(b.downloaded || ''),
     },
     {
       title: 'Действия',
       key: 'actions',
-      render: (_, record) => (
-        <Flex justify="space-evenly" align="center">
-          {/* <Tooltip 
-            placement='top'
-            title='Предварительный просмотр'
-          >
+      render: (_: any, record: IFile) => (
+        <Flex justify="space-evenly" align="center" gap="small">
+          <Tooltip title="Скачать файл">
             <Button
-              icon={<FileSearchOutlined />}
-              onClick={() => handleFileSearchOutlined(record.id)} />
-          </Tooltip> */}
-
-          <Tooltip 
-            placement='top'
-            title='Скачать файл'
-          >
-            <Button
-              icon={<CloudDownloadOutlined/>}
-              onClick={() => handleDownloadFile(record.id, record.file_name)} />
+              icon={<CloudDownloadOutlined />}
+              onClick={() => handleDownloadFile(record.id, record.file_name)}
+            />
           </Tooltip>
 
-          <Tooltip 
-            placement='top'
-            title='Получить специальную ссылку'
-          >
+          <Tooltip title="Получить ссылку">
             <Button
-              icon={<ShareAltOutlined/>}
-              onClick={() => handleGetFileLink(record.id)} />
+              icon={<ShareAltOutlined />}
+              onClick={() => handleGetFileLink(record.id)}
+            />
           </Tooltip>
 
-          <Tooltip 
-            placement='top'
-            title='Удалить файл'
-          >
+          <Tooltip title="Удалить файл">
             <Button
-              icon={<DeleteOutlined/>}
-              onClick={() => handleDeleteFile(record.id)} />
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteFile(record.id)}
+            />
           </Tooltip>
         </Flex>
       ),
     }
-  ];
+  ]
 
   return (
     <Card 
-      className='card'
-      title={currentUser?.username === storageOwner?.username ? 
-        <h1>Ваше файловое хранилище</h1> :
-        <h1>Файлы пользователя "{storageOwner?.username}"</h1>
+      className="card"
+      title={
+        currentUser?.username === storageOwner?.username ? 
+          <h1>Ваше файловое хранилище</h1> :
+          <h1>Файлы пользователя "{storageOwner?.username}"</h1>
       }
       bordered={false}
     >
-      {error ?
-        <Alert type='error' message={error} closable onClose={() => setShowAlert(false)} /> :
-        <>
-          <Table dataSource={filesList} columns={columns} />
-          <DownloadSection />
-        </>
-      }
+      {showAlert && error && (
+        <Alert 
+          type="error" 
+          message={error} 
+          closable 
+          onClose={() => setShowAlert(false)} 
+        />
+      )}
+      
+      <Table 
+        dataSource={filesList} 
+        columns={columns} 
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+      />
+      
+      <DownloadSection />
     </Card>
-  );
+  )
 }

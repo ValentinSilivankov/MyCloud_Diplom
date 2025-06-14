@@ -1,115 +1,126 @@
-import type { FormProps } from 'antd'
-import { Button, Card, Checkbox, Form, Input, message } from 'antd'
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import type { FormProps } from 'antd';
+import { Button, Card, Checkbox, Form, Input, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { 
   clearError,
   setStorageOwner,
   usersState 
-} from '../redux/slices/usersSlice'
-import { ILoginFormData } from '../models'
-import { loginUser } from '../services/userServices'
-import { useAppDispatch, useAppSelector } from '../hooks'
+} from '../redux/slices/usersSlice';
+import { ILoginFormData, IUser } from '../models';
+import { loginUser } from '../services/authServices';
+import { useAppDispatch, useAppSelector } from '../hooks';
+import { fetchCSRFToken } from '../services/authServices';
 
 interface FieldType {
-  userName?: string,
-  password?: string,
-  remember?: string,
+  userName: string;
+  password: string;
+  remember: boolean;
 }
 
 export default function Login() {
-  const {isLoading} = useAppSelector(usersState);
+  const { isLoading } = useAppSelector(usersState);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [, setError] = useState('');
+  const [csrfToken, setCsrfToken] = useState<string>('');
+  const [isCsrfLoading, setIsCsrfLoading] = useState(true);
 
-  const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
-    setError('');
-    const formData: ILoginFormData = {
-      username: values.userName ?? '',
-      password: values.password ?? '',
-    };
-    
-    dispatch(loginUser(formData))
-      .unwrap()
-      .then((data) => {
-        console.log('Вход выполнен успешно');
-        message.success({
-          content: 'Вход выполнен успешно',
-          duration: 2,
-        });
-        dispatch(clearError());
-        localStorage.setItem('token', data.token);
-
-        if (data.user.is_staff) {
-          navigate('/admin');
-        } else {
-          dispatch(setStorageOwner(data.user));
-          navigate('/storage');
-        }
+  useEffect(() => {
+    setIsCsrfLoading(true);
+    fetchCSRFToken()
+      .then(token => {
+        setCsrfToken(token);
+        setIsCsrfLoading(false);
       })
-      .catch((error) => {
-        console.log('Ошибка входа:', error);
-        setError(error);
-        message.error({
-          content: error,
-          duration: 2,
-          style: {
-            marginTop: '35vh',
-          },
-        });
+      .catch(err => {
+        console.error('Failed to fetch CSRF token:', err);
+        message.error('Ошибка загрузки системы безопасности');
+        setIsCsrfLoading(false);
       });
-  };    
-  
-  const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
-    console.log('Ошибка входа:', errorInfo.errorFields[0].errors[0]);
-    message.error({
-      content: errorInfo.errorFields[0].errors[0],
-      duration: 2,
-      style: {
-        marginTop: '35vh',
-      },
-    });
+
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
+  const saveUserData = (user: IUser, remember: boolean) => {
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem('user', JSON.stringify({
+      username: user.username,
+      is_staff: user.is_staff
+    }));
   };
-  
+
+  const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
+    if (!csrfToken) {
+      message.error('Система безопасности не инициализирована');
+      return;
+    }
+
+    const formData: ILoginFormData = {
+      username: values.userName,
+      password: values.password,
+    };
+
+    try {
+      const { user } = await loginUser(formData);
+      message.success('Вход выполнен успешно');
+      saveUserData(user, values.remember);
+      dispatch(setStorageOwner(user));
+      
+      navigate(user.is_staff ? '/admin' : '/storage', { replace: true });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка входа';
+      message.error(errorMessage);
+    }
+  };
+
+  const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
+    console.log('Validation failed:', errorInfo);
+    message.error(errorInfo.errorFields[0].errors[0]);
+  };
+
   return (
     <Card 
-      className='card'
+      className="card"
       title={<h1>Аутентификация</h1>}
       bordered={false}
     > 
       <Form
-        name='basic'
-        layout='vertical'
+        name="login"
+        layout="vertical"
         labelCol={{ span: 8 }}
         wrapperCol={{ span: 16 }}
         initialValues={{ remember: true }}
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
-        autoComplete='off'
-        className='form'
+        autoComplete="off"
+        className="form"
       >
         <Form.Item<FieldType>
-          label='Логин'
-          name='userName'
+          label="Логин"
+          name="userName"
           wrapperCol={{ sm: 24 }}
           rules={[{ required: true, message: 'Пожалуйста, введите Ваш логин' }]}
         >
-          <Input placeholder='Логин'/>
+          <Input placeholder="Логин"/>
         </Form.Item>
 
         <Form.Item<FieldType>
-          label='Пароль'
-          name='password'
+          label="Пароль"
+          name="password"
           wrapperCol={{ sm: 24 }}
-          rules={[{ required: true, message: 'Пожалуйста, введите Ваш пароль' }]}
+          rules={[
+            { required: true, message: 'Пожалуйста, введите Ваш пароль' },
+            { min: 6, message: 'Пароль должен содержать минимум 6 символов' }
+          ]}
         >
-          <Input.Password placeholder='Пароль'/>
+          <Input.Password placeholder="Пароль"/>
         </Form.Item>
 
         <Form.Item<FieldType>
-          name='remember'
-          valuePropName='checked'
+          name="remember"
+          valuePropName="checked"
           wrapperCol={{ sm: 24 }}
         >
           <Checkbox>Запомнить меня</Checkbox>
@@ -117,10 +128,11 @@ export default function Login() {
         
         <Form.Item wrapperCol={{ sm: 24 }}>
           <Button 
-            type='primary'
-            htmlType='submit'
-            size='large'
-            loading={isLoading}
+            type="primary"
+            htmlType="submit"
+            size="large"
+            loading={isLoading || isCsrfLoading}
+            disabled={!csrfToken}
           >
             Войти
           </Button>

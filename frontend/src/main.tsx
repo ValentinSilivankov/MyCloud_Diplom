@@ -4,11 +4,14 @@ import { createRoot } from 'react-dom/client'
 import { store } from './redux/store'
 import App from './App.tsx'
 import './index.css'
+import { CookiesProvider } from 'react-cookie'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
-      <App />
+      <CookiesProvider>
+        <App />
+      </CookiesProvider>
     </Provider>
   </StrictMode>
 )

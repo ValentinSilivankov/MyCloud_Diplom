@@ -145,7 +145,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5000",
+    "http://127.0.0.1:8000",
+]
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -167,7 +173,11 @@ CORS_ALLOW_METHODS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'knox.auth.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'knox.auth.TokenAuthentication',        
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
     ]
 }
 
@@ -175,6 +185,7 @@ KNOX_TOKEN_MODEL = 'knox.AuthToken'
 
 REST_KNOX = {
     'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
+    # 'SECURE_HASH_ALGORITHM': 'cryptography.hazmat.primitives.hashes.SHA512',
     'AUTH_TOKEN_CHARACTER_LENGTH': 64,
     'TOKEN_TTL': timedelta(hours=5),
     'USER_SERIALIZER': 'users.serializers.UserSerializer',
@@ -184,4 +195,22 @@ REST_KNOX = {
     'AUTH_HEADER_PREFIX': 'Token',
     'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
     'TOKEN_MODEL': 'knox.AuthToken',
+    'USE_COOKIES': False,
+    'COOKIE_NAME': 'auth_token',
+    'COOKIE_HTTPONLY': True,
+    'COOKIE_SAMESITE': 'Lax',
+    'COOKIE_PATH': '/',
+    'COOKIE_DOMAIN': None,
 }
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 3600 * 24 * 30
+
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False 
+CSRF_COOKIE_SAMESITE = 'Lax'

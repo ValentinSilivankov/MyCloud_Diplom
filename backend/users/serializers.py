@@ -12,7 +12,7 @@ from users.models import User
 class UserFilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
-        fields = ['size']
+        fields = ['id', 'username','size']
 
 
 class AdminSerializer(serializers.ModelSerializer):
@@ -20,7 +20,8 @@ class AdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'files')
+        fields = ('id', 'username', 'first_name', 'last_name',
+                  'email', 'is_staff', 'is_active', 'files')
         read_only_fields = ['id']
 
 
@@ -60,3 +61,28 @@ class UserSerializer(serializers.ModelSerializer):
                     or instance.is_superuser):
                 validated_data.pop('is_staff')
         return super().update(instance, validated_data)
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if user:
+                if not user.is_active:
+                    raise ValidationError('Пользователь деактивирован')
+                return {'user': user}
+            raise ValidationError('Неверные учетные данные')
+        raise ValidationError('Необходимо указать имя пользователя и пароль')
+    
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_staff')
+        read_only_fields = fields
