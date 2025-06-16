@@ -29,7 +29,10 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'password')
         read_only_fields = ['id']
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email': {'required': True}
+            }
 
     def validate_username(self, value):
         if User.objects.filter(username=value.lower()).exists():
@@ -60,3 +63,13 @@ class UserSerializer(serializers.ModelSerializer):
                     or instance.is_superuser):
                 validated_data.pop('is_staff')
         return super().update(instance, validated_data)
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        user = authenticate(username=data['username'], password=data['password'])
+        if not user:
+            raise ValidationError("Неверные учетные данные")
+        return {'user': user}

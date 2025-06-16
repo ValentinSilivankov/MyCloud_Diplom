@@ -13,11 +13,19 @@ ACCEPTABLE_EXTENSIONS = [
 ]
 
 
-def user_directory_path(instance, file_name):
-    name, path = get_parts_of_file_name(instance.user, file_name)
-    instance.file_path = path
-    instance.file_name = name
-    return path
+def user_directory_path(instance, filename):
+    # name, path = get_parts_of_file_name(instance.user, file_name)
+    # instance.file_path = path
+    # instance.file_name = name
+    # return path
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    while True:
+        unique_name = f"{base}({counter}){ext}" if counter > 1 else filename
+        path = f"{instance.user.username}/{unique_name}"
+        if not File.objects.filter(file=path).exists():
+            return path
+        counter += 1
 
 
 def get_parts_of_file_name(user, file_name):
@@ -34,11 +42,17 @@ def get_parts_of_file_name(user, file_name):
 
 
 class File(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                             related_name='files', verbose_name='Пользователь')
-    file = models.FileField(upload_to=user_directory_path,
-                            validators=[FileExtensionValidator(ACCEPTABLE_EXTENSIONS)],
-                            verbose_name='Файл')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='files',
+        verbose_name='Пользователь'
+        )
+    file = models.FileField(
+        upload_to=user_directory_path,
+        validators=[FileExtensionValidator(ACCEPTABLE_EXTENSIONS)],
+        verbose_name='Файл'
+        )
     file_name = models.CharField(blank=True, default='', max_length=255, verbose_name='Имя файла')
     comment = models.TextField(blank=True, default='', verbose_name='Комментарий')
     size = models.PositiveIntegerField(blank=True, verbose_name='Размер')
@@ -47,30 +61,39 @@ class File(models.Model):
     special_link = models.CharField(blank=True, default='', max_length=255, verbose_name='Специальная ссылка')
 
     def save(self, *args, **kwargs):
-        if self.file_name:
-            self_file_name = '_'.join(self.file_name.split())
-            original_file_name = '_'.join(os.path.basename(self.file.name).split())
-            if self_file_name != original_file_name:
-                new_file_name, _ = os.path.splitext(self.file_name)
-                _, original_file_extension = os.path.splitext(self.file.name)
-                new_file_name = f'{new_file_name}{original_file_extension}'
-                if self.id:
-                    old_full_file_path = self.file.path
-                    file_name, file_path = get_parts_of_file_name(self.user, new_file_name)
-                    self.file_name = file_name
-                    self.file.name = file_path
-                    new_full_file_path = os.path.join(settings.MEDIA_ROOT, self.file.name)
-                    os.rename(old_full_file_path, new_full_file_path)
-                else:
-                    self.file.name = new_file_name
+        # if self.file_name:
+        #     self_file_name = '_'.join(self.file_name.split())
+        #     original_file_name = '_'.join(os.path.basename(self.file.name).split())
+        #     if self_file_name != original_file_name:
+        #         new_file_name, _ = os.path.splitext(self.file_name)
+        #         _, original_file_extension = os.path.splitext(self.file.name)
+        #         new_file_name = f'{new_file_name}{original_file_extension}'
+        #         if self.id:
+        #             old_full_file_path = self.file.path
+        #             file_name, file_path = get_parts_of_file_name(self.user, new_file_name)
+        #             self.file_name = file_name
+        #             self.file.name = file_path
+        #             new_full_file_path = os.path.join(settings.MEDIA_ROOT, self.file.name)
+        #             os.rename(old_full_file_path, new_full_file_path)
+        #         else:
+        #             self.file.name = new_file_name
 
-        self.size = self.file.size
+        # self.size = self.file.size
+        # super().save(*args, **kwargs)
+
+        if not self.pk:
+            self.size = self.file.size
+            self.file_name = os.path.basename(self.file.name)
         super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Файл'
         verbose_name_plural = 'Файлы'
         ordering = ['user', '-uploaded']
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['uploaded']),
+        ]
 
 
 @receiver(pre_delete, sender=File)

@@ -3,7 +3,7 @@ import {
   createBrowserRouter, 
   createRoutesFromElements, 
   RouterProvider } from 'react-router-dom'
-import { Main } from './components/Main'
+import { Main } from './components/Main/'
 import Welcome from './pages/Welcome/Welcome'
 import Register from './pages/Register'
 import Login from './pages/Login'
@@ -11,6 +11,7 @@ import Admin from './pages/Admin'
 import FileStorage from './pages/FileStorage'
 import ErrorPage from './pages/ErrorPage'
 import './App.css'
+
 
 export default function App() {
   const routes = createBrowserRouter(
