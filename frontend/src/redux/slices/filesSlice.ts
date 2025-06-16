@@ -53,6 +53,7 @@ const FilesSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(uploadFile.pending, (state) => {
+        state.isLoading = true;
         state.error = '';
       })
       .addCase(uploadFile.fulfilled, (state) => {
@@ -71,7 +72,16 @@ const FilesSlice = createSlice({
       .addCase(downloadFile.pending, (state) => {
         state.error = '';
       })
+      .addCase(downloadFile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Обновляем дату скачивания в списке файлов
+        const fileIndex = state.filesList.findIndex(f => f.id === action.payload);
+        if (fileIndex !== -1) {
+          state.filesList[fileIndex].downloaded = new Date().toISOString();
+        }
+      })
       .addCase(downloadFile.rejected, (state, action) => {
+        state.isLoading = false;
         state.error = action.payload as string;
       })
       .addCase(getFileLink.pending, (state) => {
