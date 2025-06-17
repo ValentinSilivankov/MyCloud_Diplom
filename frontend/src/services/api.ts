@@ -1,28 +1,21 @@
-const API_URL = '/api';
+import axios from 'axios'
 
-export async function getCSRFToken(): Promise<string> {
-  const response = await fetch(`${API_URL}/csrf/`, {
-    credentials: 'include',
-  });
-  const { csrfToken } = await response.json();
-  return csrfToken;
-}
+const api = axios.create({
+  baseURL: '/api',
+  withCredentials: true,
+})
 
-export async function authFetch(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  const csrfToken = await getCSRFToken();
-  
-  const headers = {
-    ...options.headers,
-    'Content-Type': 'application/json',
-    'X-CSRFToken': csrfToken,
-  };
 
-  return fetch(`${API_URL}${url}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-}
+api.interceptors.request.use(async (config) => {
+  if (!['get', 'head', 'options'].includes(config.method?.toLowerCase() ?? '')) {
+    try {
+      const response = await axios.get('/api/csrf/', { withCredentials: true })
+      config.headers['X-CSRFToken'] = response.data.csrfToken
+    } catch (error) {
+      console.error('Failed to get CSRF token:', error)
+    }
+  }
+  return config
+})
+
+export default api

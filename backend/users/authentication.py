@@ -2,19 +2,19 @@ from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 class KnoxCookieAuthentication(TokenAuthentication):
-  
     def authenticate(self, request):
-
+        # Получаем токен из куки
         token = request.COOKIES.get('auth_token')
+
+        # Если токена нет в куках — пробуем через заголовок Authorization
         if not token:
-            try:
-                return self.authenticate_credentials(token.encode('utf-8'))
-            except AuthenticationFailed:
-                request.COOKIES.pop('auth_token', None)
-                raise
-            
-        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        if auth_header.startswith('Bearer '):
-            return super().authenticate(request)
-        
-        return None
+            return super().authenticate(request)  # Пробуем стандартный Knox-метод
+
+        try:
+            # Пытаемся аутентифицировать через куки
+            user, auth_tuple = self.authenticate_credentials(token.encode('utf-8'))
+            return (user, auth_tuple)
+        except AuthenticationFailed:
+            # Удаляем битый токен из куки (если нужно)
+            request.COOKIES.pop('auth_token', None)
+            raise

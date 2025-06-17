@@ -33,12 +33,12 @@ export interface IDownloadFileData {
 }
 
 export interface IUser {
-  id: number;
-  username: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  is_staff: boolean;
+    id: number,
+    username: string,
+    firstName: string,
+    lastName: string,
+    email: string,
+    is_staff: boolean,
   }
   
 export interface IUserForAdmin {
@@ -59,8 +59,8 @@ export interface IUserForAdmin {
 
   export interface IRegisterFormData {
     username: string,
-    first_name: string,
-    last_name: string,
+    first_name?: string,
+    last_name?: string,
     email: string,
     password: string,
   }
@@ -73,4 +73,5 @@ export interface IUserForAdmin {
     lastName?: string,
     email?: string,
     isAdmin?: boolean;
+    is_staff: boolean;
   }

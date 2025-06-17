@@ -4,8 +4,8 @@ from knox.auth import TokenAuthentication
 
 class CustomCsrfMiddleware(CsrfViewMiddleware):
     def process_view(self, request, callback, callback_args, callback_kwargs):
-        if request.path.startswith('/api/'):
-            return self._accept(request)
+        if request.path.startswith('/api/') and 'auth_token' in request.COOKIES:
+            return None
         return super().process_view(request, callback, callback_args, callback_kwargs)
     
     def _accept(self, request):

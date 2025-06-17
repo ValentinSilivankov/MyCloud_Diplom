@@ -10,6 +10,7 @@ from .permissions import IsAdminOrIsSelf
 from .serializers import AdminSerializer, UserSerializer, LoginSerializer
 from knox.models import AuthToken
 from rest_framework.decorators import api_view, permission_classes
+from django.middleware.csrf import get_token
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -40,25 +41,22 @@ class LoginView(generics.GenericAPIView):
         response = Response({
             'user': UserSerializer(user, context=self.get_serializer_context()).data,
         })
+
         response.set_cookie(
-            key='auth_token',
-            value=token,
+            'auth_token',
+            token,
             httponly=True,
-            secure=not settings.DEBUG,
             samesite='Lax',
             max_age=5*60*60,
             path='/',
-            domain=None
         )
 
         response.set_cookie(
             key='csrftoken',
-            value=request.META.get('CSRF_COOKIE', ''),
-            secure=not settings.DEBUG,
+            value=get_token(request),
             samesite='Lax',
-            max_age=60*60*5,
+            # max_age=60*60*5,
             path='/',
-            domain=None
         )
 
         # return super(LoginView, self).post(request, format=None)

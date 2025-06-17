@@ -54,7 +54,7 @@ export const Main = () => {
       .unwrap()
       .then(() => {
         console.log("Пользователь успешно вышел из системы");
-        localStorage.removeItem("token");
+        // localStorage.removeItem("token");
         navigate("/");
       })
       .catch((error) => console.log(error));

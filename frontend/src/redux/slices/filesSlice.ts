@@ -9,24 +9,40 @@ import {
   uploadFile 
 } from '../../services/fileServices'
 
-interface InitialState {
-  filesList: IFile[],
-  isLoading: boolean,
-  error: string,
+
+interface FilesState {
+  filesList: IFile[];
+  isLoading: boolean;
+  error: string;
+  lastDownloaded: number | null;
 }
 
-const initialState: InitialState = {
+const initialState: FilesState = {
   filesList: [],
-  isLoading: true,
+  isLoading: false,
   error: '',
+  lastDownloaded: null,
 };
+// interface InitialState {
+//   filesList: IFile[],
+//   isLoading: boolean,
+//   error: string,
+//   lastDownloaded:number | null;
+// }
+
+// const initialState: InitialState = {
+//   filesList: [],
+//   isLoading: true,
+//   error: '',
+//   lastDownloaded: null,
+// };
 
 const FilesSlice = createSlice({
   name: 'files',
   initialState,
-  selectors: {
-    filesState: (state) => state,
-  },
+  // selectors: {
+  //   filesState: (state) => state,
+  // },
   reducers: {
     clearFilesList: (state) => {
       state.filesList = [];
@@ -34,24 +50,32 @@ const FilesSlice = createSlice({
     clearError: (state) => {
       state.error = '';
     },
+    resetLastDownloaded: (state) => {
+      state.lastDownloaded = null;
+    },
   },
   extraReducers: (builder) => {
     builder
+
       .addCase(getFilesList.pending, (state) => {
         state.isLoading = true;
         state.error = '';
       })
       .addCase(getFilesList.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.filesList = action.payload;
-        state.filesList.forEach((file) => {
-          file.key = file.id.toString();
-        });
+        state.filesList = action.payload.map((file: IFile) =>({
+          ...file,
+          key: file.id.toString(),
+        }));
+        // state.filesList.forEach((file) => {
+        //   file.key = file.id.toString();
+        // });
       })
       .addCase(getFilesList.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
+
       .addCase(uploadFile.pending, (state) => {
         state.isLoading = true;
         state.error = '';
@@ -63,35 +87,57 @@ const FilesSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
+
       .addCase(changeFile.pending, (state) => {
         state.error = '';
+      })
+      .addCase(changeFile.fulfilled, (state, action) => {
+        state.filesList = state.filesList.map(file =>
+          file.id === action.payload.id ? action.payload : file
+        );
       })
       .addCase(changeFile.rejected, (state, action) => {
         state.error = action.payload as string;
       })
+
       .addCase(downloadFile.pending, (state) => {
         state.error = '';
       })
       .addCase(downloadFile.fulfilled, (state, action) => {
-        state.isLoading = false;
-        // Обновляем дату скачивания в списке файлов
-        const fileIndex = state.filesList.findIndex(f => f.id === action.payload);
-        if (fileIndex !== -1) {
-          state.filesList[fileIndex].downloaded = new Date().toISOString();
-        }
+        state.lastDownloaded = action.payload;
+        state.filesList = state.filesList.map(file => {
+          if (file.id === action.payload) {
+            return { ...file, downloaded: new Date().toISOString() };
+          }
+          return file;
+        });
       })
       .addCase(downloadFile.rejected, (state, action) => {
-        state.isLoading = false;
         state.error = action.payload as string;
       })
+
       .addCase(getFileLink.pending, (state) => {
         state.error = '';
+      })
+      .addCase(getFileLink.fulfilled, (state, action) => {
+        state.filesList = state.filesList.map(file => {
+          if (file.id === action.payload.id) {
+            return { ...file, special_link: action.payload.link };
+          }
+          return file;
+        });
       })
       .addCase(getFileLink.rejected, (state, action) => {
         state.error = action.payload as string;
       })
+
       .addCase(deleteFile.pending, (state) => {
         state.error = '';
+      })
+      .addCase(deleteFile.fulfilled, (state, action) => {
+        state.filesList = state.filesList.filter(
+          file => file.id !== action.payload
+        );
       })
       .addCase(deleteFile.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -99,6 +145,8 @@ const FilesSlice = createSlice({
   },
 });
 
-export const { filesState } = FilesSlice.selectors;
-export const { clearFilesList, clearError } = FilesSlice.actions;
+
+export const { clearFilesList, clearError, resetLastDownloaded } = FilesSlice.actions;
+
+export const filesState = (state: { files: FilesState }) => state.files;
 export default FilesSlice.reducer;
