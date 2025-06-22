@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from files.models import File
 
 
@@ -12,6 +11,9 @@ class FileSerializer(serializers.ModelSerializer):
             'id', 'user', 'file', 'file_name', 'comment',
             'size', 'uploaded', 'downloaded', 'special_link'
             ]
+        extra_kwargs = {
+            'special_link': {'read_only': True}
+        }
         read_only_fields = ['id', 'size', 'uploaded', 'downloaded', 'special_link']
 
     def create(self, validated_data):

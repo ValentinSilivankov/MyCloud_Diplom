@@ -1,99 +1,131 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Form, Input, Card, message } from 'antd';
+import { Form, Input, Button, Card, Alert } from 'antd';
+import { 
+  UserOutlined, 
+  MailOutlined, 
+  LockOutlined 
+} from '@ant-design/icons';
 import { useAppDispatch } from '../hooks';
 import { registerUser } from '../services/userServices';
+// import { IRegisterFormData } from '../models';
+
+interface FormValues {
+  username: string;
+  email: string;
+  password: string;
+  confirm: string;
+  firstName?: string;
+  lastName?: string;
+}
 
 export default function Register() {
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const [form] = Form.useForm();
+  const navigate = useNavigate();
 
-  const onFinish = async (values: { 
-    username: string; 
-    email: string; 
-    password: string; 
-    confirmPassword: string 
-  }) => {
-    if (values.password !== values.confirmPassword) {
-      message.error('Пароли не совпадают');
+  const onFinish = async (values: FormValues) => {
+    if (values.password !== values.confirm) {
+      setError('Пароли не совпадают');
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
+    setError('');
+
     try {
       await dispatch(registerUser({
         username: values.username,
         email: values.email,
         password: values.password,
-        first_name: '',
-        last_name: ''
+        first_name: values.firstName,
+        last_name: values.lastName,
       })).unwrap();
-      message.success('Регистрация успешна!');
+      
       navigate('/login');
     } catch (error) {
-      message.error('Ошибка регистрации');
+      setError('Ошибка регистрации. Возможно, пользователь уже существует.' + error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <Card title="Регистрация" style={{ maxWidth: 500, margin: '20px auto' }}>
-      <Form
-        form={form}
-        layout="vertical"
+    <Card title="Регистрация" style={{ maxWidth: 500, margin: '0 auto' }}>
+      {error && <Alert message={error} type="error" style={{ marginBottom: 24 }} />}
+      <Form<FormValues>
+        name="register"
         onFinish={onFinish}
-        autoComplete="off"
+        layout="vertical"
       >
         <Form.Item
-          label="Логин"
           name="username"
           rules={[
-            { required: true, message: 'Введите логин' },
+            { required: true, message: 'Введите имя пользователя' },
             { min: 4, message: 'Минимум 4 символа' }
           ]}
         >
-          <Input />
+          <Input prefix={<UserOutlined />} placeholder="Имя пользователя" />
         </Form.Item>
 
         <Form.Item
-          label="Email"
           name="email"
           rules={[
             { required: true, message: 'Введите email' },
             { type: 'email', message: 'Некорректный email' }
           ]}
         >
-          <Input />
+          <Input prefix={<MailOutlined />} placeholder="Email" />
         </Form.Item>
 
         <Form.Item
-          label="Пароль"
+          name="firstName"
+        >
+          <Input placeholder="Имя (необязательно)" />
+        </Form.Item>
+
+        <Form.Item
+          name="lastName"
+        >
+          <Input placeholder="Фамилия (необязательно)" />
+        </Form.Item>
+
+        <Form.Item
           name="password"
           rules={[
             { required: true, message: 'Введите пароль' },
             { min: 6, message: 'Минимум 6 символов' }
           ]}
         >
-          <Input.Password />
+          <Input.Password prefix={<LockOutlined />} placeholder="Пароль" />
         </Form.Item>
 
         <Form.Item
-          label="Подтвердите пароль"
-          name="confirmPassword"
+          name="confirm"
           dependencies={['password']}
           rules={[
-            { required: true, message: 'Подтвердите пароль' }
+            { required: true, message: 'Подтвердите пароль' },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue('password') === value) {
+                  return Promise.resolve();
+                }
+                return Promise.reject('Пароли не совпадают');
+              },
+            }),
           ]}
         >
-          <Input.Password />
+          <Input.Password prefix={<LockOutlined />} placeholder="Подтверждение пароля" />
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} block>
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            size='large'
+            loading={isLoading}
+          >
             Зарегистрироваться
           </Button>
         </Form.Item>

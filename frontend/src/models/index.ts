@@ -5,6 +5,11 @@ export interface IError {
     errFunc?: PayloadAction<string | number >,
 }
 
+export interface IAuthResponse {
+  user: IUser;
+  is_authenticated: boolean;
+}
+
 export interface IFile {
     id: number,
     key: string,
@@ -33,17 +38,17 @@ export interface IDownloadFileData {
 }
 
 export interface IUser {
-  id: number;
-  username: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  is_staff: boolean;
+    id: number,
+    username: string,
+    firstName?: string,
+    lastName?: string,
+    email: string,
+    is_staff: boolean,
   }
   
 export interface IUserForAdmin {
     id: number,
-    key: string,
+    key?: string,
     username: string,
     firstName: string,
     lastName: string,
@@ -59,8 +64,8 @@ export interface IUserForAdmin {
 
   export interface IRegisterFormData {
     username: string,
-    first_name: string,
-    last_name: string,
+    first_name?: string,
+    last_name?: string,
     email: string,
     password: string,
   }
@@ -73,4 +78,10 @@ export interface IUserForAdmin {
     lastName?: string,
     email?: string,
     isAdmin?: boolean;
+    is_staff: boolean;
   }
+
+  
+export interface IUserForAdmin extends IUser {
+  key?: string;
+}

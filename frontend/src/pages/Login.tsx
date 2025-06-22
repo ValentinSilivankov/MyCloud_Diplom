@@ -25,7 +25,7 @@ export default function Login() {
   };
 
   return (
-    <Card title="Вход в систему" style={{ maxWidth: 500, margin: '20px auto' }}>
+    <Card title="Аутентификация" style={{ maxWidth: 500, margin: '20px auto' }}>
       <Form
         form={form}
         layout="vertical"
