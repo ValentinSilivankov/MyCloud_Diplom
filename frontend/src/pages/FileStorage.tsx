@@ -251,7 +251,11 @@ export default function StoragePage() {
       title: 'Размер',
       dataIndex: 'size',
       key: 'size',
-      render: (text) => formatFileSize(text),
+      // render: (text) => formatFileSize(text),
+      render: (text) => {
+        console.log('Size value before formatting:', text, typeof text);
+        return formatFileSize(text);
+      },
       sorter: (a, b) => a.size - b.size,
       showSorterTooltip: false,
     },

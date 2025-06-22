@@ -66,6 +66,7 @@ const FilesSlice = createSlice({
         state.filesList = action.payload.map((file: IFile) =>({
           ...file,
           key: file.id.toString(),
+          size: file.size
         }));
         // state.filesList.forEach((file) => {
         //   file.key = file.id.toString();
