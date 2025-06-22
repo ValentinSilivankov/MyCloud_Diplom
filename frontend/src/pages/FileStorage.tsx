@@ -225,7 +225,9 @@ export default function StoragePage() {
       key: 'file_name',
       render: (text, record) => (
         <Tooltip placement='topLeft' title='Нажмите для редактирования'>
-          <a onClick={() => handleEditFileName(record.id, record.file_name)}>
+          <a
+            key={`name-${record.id}`}
+            onClick={() => handleEditFileName(record.id, record.file_name)}>
             {text}
           </a>
         </Tooltip>
@@ -239,8 +241,18 @@ export default function StoragePage() {
       key: 'comment',
       render: (text, record) => (
         <Tooltip placement='topLeft' title='Нажмите для редактирования'>
-          <a onClick={() => handleEditFileComment(record.id, record.comment)}>
-            {text}
+          <a 
+            key={`comment-${record.id}`}
+            onClick={() => handleEditFileComment(record.id, record.comment ||'')}
+            style={{
+              display: 'inline-block',
+              width: !text ? '20px' : 'auto',
+              height: '20px',
+              border: !text ? '1px dashed #d9d9d9' : 'none',
+              borderRadius: '4px'
+            }}
+            >
+            {text || ''}
           </a>
         </Tooltip>
       ),
@@ -253,7 +265,7 @@ export default function StoragePage() {
       key: 'size',
       // render: (text) => formatFileSize(text),
       render: (text) => {
-        console.log('Size value before formatting:', text, typeof text);
+        // console.log('Size value before formatting:', text, typeof text);
         return formatFileSize(text);
       },
       sorter: (a, b) => a.size - b.size,
@@ -336,7 +348,12 @@ export default function StoragePage() {
       {error ?
         <Alert type='error' message={error} closable onClose={() => setShowAlert(false)} /> :
         <>
-          <Table dataSource={filesList} columns={columns} />
+          <Table 
+          dataSource={filesList} 
+          columns={columns}
+          rowKey={(record: IFile) => record.id.toString()}
+          pagination={false}
+          />
           <DownloadSection />
         </>
       }

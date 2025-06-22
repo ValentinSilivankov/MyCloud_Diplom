@@ -12,13 +12,13 @@ export interface IAuthResponse {
 
 export interface IFile {
     id: number,
-    key: string,
+    key?: string,
     file_name: string,
     comment: string,
     size: number,
     uploaded: string,
-    downloaded: string,
-    specialLink: string,
+    downloaded?: string,
+    specialLink?: string,
 }
 
 export interface IFilesSize {

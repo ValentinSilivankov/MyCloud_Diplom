@@ -12,7 +12,9 @@ class FileSerializer(serializers.ModelSerializer):
             'size', 'uploaded', 'downloaded', 'special_link'
             ]
         extra_kwargs = {
-            'special_link': {'read_only': True}
+            'special_link': {'read_only': True},
+            'file': {'required': True},
+            'comment': {'required': False, 'allow_blank': True}
         }
         read_only_fields = ['id', 'size', 'uploaded', 'downloaded', 'special_link']
 

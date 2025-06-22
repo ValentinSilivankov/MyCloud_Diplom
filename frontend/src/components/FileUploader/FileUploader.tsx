@@ -32,9 +32,9 @@ export default function FileUploader({ setShowForm }: FileUploaderProps) {
 
     if (file) {
       const formData = new FormData();
-      formData.append("user", String(storageOwner?.id));
+      // formData.append("user", String(storageOwner?.id));
       formData.append("file", file);
-      formData.append("comment", comment);
+      formData.append("comment", comment || '');
 
       dispatch(uploadFile(formData))
         .unwrap()
