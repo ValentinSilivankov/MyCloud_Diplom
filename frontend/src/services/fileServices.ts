@@ -6,10 +6,10 @@ import api from './api'
 // const BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export const getFilesList = createAsyncThunk(
-    'file/getlist',
+    'files/getlist',
     async (username: string | undefined, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/file/list/${username}/`)
+            const response = await api.get(`/files/list/${username}/`)
 
             // const config = {
             //     method: 'GET',
@@ -26,7 +26,7 @@ export const getFilesList = createAsyncThunk(
 );
 
 export const uploadFile = createAsyncThunk(
-    'file/upload',
+    'files/upload',
     async (formData: FormData, { rejectWithValue }) => {
         try {
             const response = await api.post('/files/', formData, {
@@ -52,7 +52,7 @@ export const uploadFile = createAsyncThunk(
 );
 
 export const changeFile = createAsyncThunk(
-    'file/update',
+    'files/update',
     async (fileData: IChangeFileData, { rejectWithValue }) => {
         try {
             const response = await api.patch(`/files/${fileData.id}/`, fileData);
@@ -77,7 +77,7 @@ export const changeFile = createAsyncThunk(
 );
 
 export const downloadFile = createAsyncThunk(
-    'file/download',
+    'files/download',
     async (fileData: IDownloadFileData, { rejectWithValue }) => {
         try {
             const response = await api.get(`/files/download/${fileData.id}/`, {
@@ -118,7 +118,7 @@ export const downloadFile = createAsyncThunk(
 );
 
 export const getFileLink = createAsyncThunk(
-    'file/getLink',
+    'files/getLink',
     async (fileId: number, { rejectWithValue }) => {
         try {
             const response = await api.get(`/files/link/${fileId}/`);
@@ -139,7 +139,7 @@ export const getFileLink = createAsyncThunk(
 );
 
 export const deleteFile = createAsyncThunk(
-    'file/delete',
+    'files/delete',
     async (fileId: number, { rejectWithValue }) => {
         try {
             await api.delete(`/files/${fileId}/`);
