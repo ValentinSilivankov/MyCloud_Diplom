@@ -45,7 +45,7 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        validated_data['username'] = validated_data['username'].lower()
+        validated_data['username'] = validated_data['username']
         validated_data['email'] = validated_data['email'].lower()
         validated_data['password'] = make_password(validated_data['password'])
         if 'is_staff' in validated_data:
