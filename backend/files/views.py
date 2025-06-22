@@ -86,7 +86,8 @@ class FileViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='share/(?P<pk>[^/.]+)')
     def share_file(self, request, pk=None):
         try:
-            file = self.get_object()
+            file = File.objects.get(special_link__contains=pk)
+            # file = self.get_object()
             file.downloaded = timezone.now()
             file.save()
             # return self.download(request, file.id)
@@ -101,11 +102,11 @@ class FileViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def get_link(self, request, pk=None):
         file = self.get_object()
-        # self.check_object_permissions(request, file)
+        self.check_object_permissions(request, file)
 
         if not file.special_link:
             code = uuid.uuid4()
-            file.special_link = f"{request.build_absolut_uri('/')}api/files/share/{code}/"
+            file.special_link = f"{request.build_absolute_uri('/')}api/files/share/{code}/"
             file.save()
         return Response({
             'link': file.special_link,

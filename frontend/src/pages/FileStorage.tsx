@@ -181,7 +181,7 @@ export default function StoragePage() {
       .unwrap()
       .then((data) => {
         console.log('Специальная ссылка на файл получена');
-        copyToClipboard(data.special_link);
+        copyToClipboard(data.link);
         message.success({
           content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
           duration: 2,
