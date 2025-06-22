@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios'
 import { createAsyncThunk } from '@reduxjs/toolkit'
-import { ILoginFormData, IRegisterFormData, IUpdateUserData } from '../models'
+import { IAuthResponse, ILoginFormData, IRegisterFormData, IUpdateUserData } from '../models'
 import api from '../services/api';
 
 // const BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -51,15 +51,15 @@ export const registerUser = createAsyncThunk(
 );
 
 export const checkAuth = createAsyncThunk(
-  'user/checkAuth',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await api.get('/user/check-auth/');
-      return response.data;
-    } catch (error) {
-      return rejectWithValue('Not authenticated' + error);
+    'user/checkAuth',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await api.get<IAuthResponse>('/user/check-auth/');
+            return response.data;
+        } catch (error) {
+            return rejectWithValue('Authentication check failed' + error);
+        }
     }
-  }
 );
 
 export const loginUser = createAsyncThunk(
@@ -90,7 +90,9 @@ export const logoutUser = createAsyncThunk(
     'user/logout',
     async (_, { rejectWithValue }) => {
         try {
-            await api.post('/user/logout/');
+            await api.post('/user/logout/', {}, {
+                withCredentials: true
+            });
 
             // const config = {
             //     method: 'POST',

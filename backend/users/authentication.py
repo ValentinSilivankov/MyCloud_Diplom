@@ -8,7 +8,7 @@ class KnoxCookieAuthentication(TokenAuthentication):
 
         # Если токена нет в куках — пробуем через заголовок Authorization
         if not token:
-            return super().authenticate(request)  # Пробуем стандартный Knox-метод
+            return super().authenticate(request)
 
         try:
             # Пытаемся аутентифицировать через куки

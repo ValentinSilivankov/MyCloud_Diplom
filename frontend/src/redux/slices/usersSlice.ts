@@ -16,6 +16,9 @@ interface InitialState {
   usersList: IUserForAdmin[];
   isLoading: boolean;
   error: string;
+  isAuthenticated: boolean;
+  authChecked: boolean;
+  authRequested: boolean;
 }
 
 const initialState: InitialState = {
@@ -24,6 +27,9 @@ const initialState: InitialState = {
   usersList: [],
   isLoading: false,
   error: '',
+  isAuthenticated: false,
+  authChecked: false,
+  authRequested: false
 };
 
 const usersSlice = createSlice({
@@ -42,11 +48,15 @@ const usersSlice = createSlice({
     clearError: (state) => {
       state.error = '';
     },
+    setAuthChecked: (state, action: PayloadAction<boolean>) => {
+      state.authChecked = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
        .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
+        state.error= '';
       })
       .addCase(registerUser.fulfilled, (state) => {
         state.isLoading = false;
@@ -58,15 +68,29 @@ const usersSlice = createSlice({
 
       // Проверка аутентификации
       .addCase(checkAuth.pending, (state) => {
-        state.isLoading = true;
+        // state.authChecked = false;
+        if (!state.authRequested) {
+          state.isLoading = true;
+          state.authRequested = true;
+          state.error = '';
+        }
+        
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentUser = action.payload.user;
+        state.isAuthenticated = true;
+        state.authChecked = true;
+        state.isLoading = false;
+        
       })
-      .addCase(checkAuth.rejected, (state) => {
+      .addCase(checkAuth.rejected, (state, action) => {
         state.isLoading = false;
         state.currentUser = null;
+        state.isAuthenticated = false;
+        state.authChecked = true;
+        state.authRequested = false;
+        state.error = action.payload as string;
       })
 
       // Логин
@@ -77,7 +101,8 @@ const usersSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentUser = action.payload.user;
-        state.storageOwner = action.payload.user; // Автоматически устанавливаем владельца хранилища
+        state.isAuthenticated = true;
+        state.authChecked = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -91,8 +116,9 @@ const usersSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.isLoading = false;
         state.currentUser = null;
+        state.isAuthenticated = false;
+        state.authChecked = false;
         state.storageOwner = null;
-        state.usersList = [];
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -121,15 +147,21 @@ const usersSlice = createSlice({
         state.isLoading = true;
       })
       .addCase(updateUser.fulfilled, (state, action) => {
-        state.isLoading = false;
-        // Обновляем в списке
-        state.usersList = state.usersList.map(user => 
+        state.usersList = state.usersList.map (user =>
           user.id === action.payload.id ? action.payload : user
         );
-        // Обновляем текущего пользователя если это он
         if (state.currentUser?.id === action.payload.id) {
           state.currentUser = action.payload;
         }
+        // state.isLoading = false;
+        // // Обновляем в списке
+        // state.usersList = state.usersList.map(user => 
+        //   user.id === action.payload.id ? action.payload : user
+        // );
+        // Обновляем текущего пользователя если это он
+        // if (state.currentUser?.id === action.payload.id) {
+        //   state.currentUser = action.payload;
+        // }
       })
 
       // Удаление пользователя
@@ -147,8 +179,10 @@ export const {
   setStorageOwner, 
   clearStorageOwner, 
   clearUsersList, 
-  clearError 
+  clearError,
+  setAuthChecked 
 } = usersSlice.actions;
+
 
 export const usersState = (state: { users: InitialState }) => state.users;
 export default usersSlice.reducer;

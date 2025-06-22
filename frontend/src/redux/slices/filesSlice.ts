@@ -72,6 +72,9 @@ const FilesSlice = createSlice({
         // });
       })
       .addCase(getFilesList.rejected, (state, action) => {
+        if (action.error.message !== 'Duplicate request blocked') {
+          state.error = action.payload as string;
+        }
         state.isLoading = false;
         state.error = action.payload as string;
       })

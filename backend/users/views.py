@@ -15,9 +15,10 @@ from django.middleware.csrf import get_token
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_auth(request):
+    user = request.user
     return Response({
-        'authenticated': request.user.is_authenticated,
-        'user': UserSerializer(request.user).data
+        'user': UserSerializer(user).data,
+        'is_authenticated': True
         })
 
 class LoginView(generics.GenericAPIView):
@@ -55,7 +56,7 @@ class LoginView(generics.GenericAPIView):
             key='csrftoken',
             value=get_token(request),
             samesite='Lax',
-            # max_age=60*60*5,
+            max_age=60*60*5,
             path='/',
         )
 
@@ -87,3 +88,9 @@ class UserViewSet(ModelViewSet):
         return UserSerializer
 
 
+class LogoutView(generics.GenericAPIView):
+    def post(self, request):
+        response = Response({'detail': 'Successfully logged out.'})
+        response.delete_cookie('auth_token')
+        response.delete_cookie('csrftoken')
+        return response

@@ -1,5 +1,5 @@
 import moment from 'moment'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Card, Flex, message, Table, TableProps, Tooltip } from 'antd'
 import {
   CloudDownloadOutlined,
@@ -9,14 +9,15 @@ import {
 } from '@ant-design/icons'
 import { usersState } from '../redux/slices/usersSlice'
 import {
-  clearError,
-  clearFilesList,
+  // clearError,
+  // clearFilesList,
   filesState
 } from '../redux/slices/filesSlice'
 import { formatFileSize, useAppDispatch, useAppSelector } from '../hooks'
 import { IChangeFileData, IDownloadFileData, IFile } from '../models'
 import DownloadSection from '../components/DownloadSection/DownloadSection'
 import { changeFile, deleteFile, downloadFile, getFileLink, getFilesList } from '../services/fileServices'
+import { useNavigate } from 'react-router-dom'
 
 function copyToClipboard(special_link: string) {
   const textArea = document.createElement('textarea');
@@ -29,28 +30,59 @@ function copyToClipboard(special_link: string) {
 }
 
 export default function StoragePage() {
-  const { currentUser, storageOwner } = useAppSelector(usersState);
+  const { currentUser, storageOwner, isAuthenticated, authChecked } = useAppSelector(usersState);
   const { filesList, error } = useAppSelector(filesState);
   
   const [, setShowAlert] = useState(false);
   const dispatch = useAppDispatch(); 
+  const navigate = useNavigate();
+  const requestSent = useRef(false);
 
   useEffect(() => {
-    dispatch(getFilesList(storageOwner?.username));
-
-    return () => {
-      dispatch(clearFilesList());
-      dispatch(clearError());
-    };
-  }, [dispatch, storageOwner?.username]);
-
-  useEffect(() => {
-    if (error) {
-        setShowAlert(true);
-    } else {
-        setShowAlert(false);
+    if (authChecked && isAuthenticated && !requestSent.current) {
+      const targetUsername = storageOwner?.username || currentUser?.username;
+      if (targetUsername) {
+        requestSent.current =true;
+        dispatch(getFilesList(targetUsername))
+          .finally(() => {
+            requestSent.current = false;
+          });
+      }
+    } else if (authChecked && !isAuthenticated) {
+      navigate('/login');
     }
-  }, [error]);
+    }, [dispatch, navigate, isAuthenticated, authChecked, storageOwner, currentUser]);
+  
+  //   if (storageOwner?.username) {
+  //     dispatch(getFilesList(storageOwner.username));
+  //   }
+  // }, [dispatch, navigate, isAuthenticated, authChecked, storageOwner]);
+
+  // // Основная логика компонента
+  // if (isLoading) {
+  //   return <Loading />;
+  // }
+
+  // if (error) {
+  //   return <Alert message={error} type="error" />;
+  // }
+
+  // useEffect(() => {
+  //   dispatch(getFilesList(storageOwner?.username));
+
+  //   return () => {
+  //     dispatch(clearFilesList());
+  //     dispatch(clearError());
+  //   };
+  // }, [dispatch, storageOwner?.username]);
+
+  // useEffect(() => {
+  //   if (error) {
+  //       setShowAlert(true);
+  //   } else {
+  //       setShowAlert(false);
+  //   }
+  // }, [error]);
 
   const handleEditFileName = (id: number, file_name: string) => {
     const newFileName = prompt(
@@ -259,7 +291,7 @@ export default function StoragePage() {
 
           <Tooltip 
             placement='top'
-            title='Скачать файл'
+            title='Скачать'
           >
             <Button
               icon={<CloudDownloadOutlined/>}
@@ -277,7 +309,7 @@ export default function StoragePage() {
 
           <Tooltip 
             placement='top'
-            title='Удалить файл'
+            title='Удалить'
           >
             <Button
               icon={<DeleteOutlined/>}
@@ -291,9 +323,9 @@ export default function StoragePage() {
   return (
     <Card 
       className='card'
-      title={currentUser?.username === storageOwner?.username ? 
+      title={currentUser?.id === storageOwner?.id ? 
         <h1>Ваше файловое хранилище</h1> :
-        <h1>Файлы пользователя "{storageOwner?.username}"</h1>
+        <h1>Файлы пользователя "{storageOwner?.username || currentUser?.username}"</h1>
       }
       bordered={false}
     >

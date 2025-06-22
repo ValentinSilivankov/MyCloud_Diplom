@@ -1,5 +1,5 @@
 from django.urls import path
-from files.views import FileViewSet
+from files.views import FileViewSet, upload_file
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -12,6 +12,7 @@ urlpatterns = [
     path('file/download/<int:pk>/', FileViewSet.as_view({'get': 'download'})),
     path('file/link/<int:pk>/', FileViewSet.as_view({'get': 'get_link'})),
     path('file/share/<code>/', FileViewSet.as_view({'get': 'share_file'})),
+    path('', upload_file, name='file-upload'),
 ]
 
 # urlpatterns = [
