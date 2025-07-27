@@ -89,22 +89,15 @@ export const loginUser = createAsyncThunk(
 export const logoutUser = createAsyncThunk(
     'user/logout',
     async (_, { rejectWithValue }) => {
-        try {
-            await api.post('/user/logout/', {}, {
-                withCredentials: true
-            });
-
-            // const config = {
-            //     method: 'POST',
-            //     url: `${BASE_URL}/user/logout/`,
-            //     headers: { Authorization: `Token ${localStorage.getItem('token')}` },
-            // };
-            // const response = await axios(config);
-            // return await response.data;
-        } catch (error) {
-            return rejectWithValue('Ошибка выхода пользователя из системы: ' + error);
-        }
+    try {
+      const response = await api.post('/user/logout/', {}, {
+        withCredentials: true
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue('Ошибка выхода пользователя из системы: ' + error);
     }
+  }
 );
 
 export const getUsersList = createAsyncThunk(

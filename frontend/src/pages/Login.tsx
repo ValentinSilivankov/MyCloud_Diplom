@@ -16,6 +16,7 @@ export default function Login() {
     try {
       const result = await dispatch(loginUser(values)).unwrap();
       message.success(`Добро пожаловать, ${result.user.username}!`);
+      await new Promise(resolve => setTimeout(resolve, 500));
       navigate(result.user.is_staff ? '/admin' : '/storage');
     } catch (error) {
       message.error('Неверные учетные данные');

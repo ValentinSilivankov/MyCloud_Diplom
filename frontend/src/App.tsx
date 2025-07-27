@@ -22,6 +22,7 @@ export default function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/admin' element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path='/storage' element={<ProtectedRoute><FileStorage /></ProtectedRoute>} />
+        <Route path='storage/:username' element={<ProtectedRoute><FileStorage /></ProtectedRoute>} />
         <Route path='/*' element={<ErrorPage  />} />
       </Route>
     )

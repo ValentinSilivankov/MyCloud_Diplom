@@ -35,7 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
             }
 
     def validate_username(self, value):
-        if User.objects.filter(username=value.lower()).exists():
+        if User.objects.filter(username=value).exists():
             raise ValidationError('Пользователь с таким логином уже существует')
         return value
 

@@ -49,16 +49,29 @@ export const Main = () => {
   const dispatch = useAppDispatch();
   type SizeType = ConfigProviderProps['componentSize'];
 
-  const handleLogout = () => {
-    dispatch(logoutUser())
-      .unwrap()
-      .then(() => {
-        console.log("Пользователь успешно вышел из системы");
-        // localStorage.removeItem("token");
-        navigate("/");
-      })
-      .catch((error) => console.log(error));
-  };
+  // const handleLogout = () => {
+  //   dispatch(logoutUser())
+  //     .unwrap()
+  //     .then(() => {
+  //       console.log("Пользователь успешно вышел из системы");
+  //       // localStorage.removeItem("token");
+  //       navigate("/");
+  //     })
+  //     .catch((error) => console.log(error));
+  // };
+  const handleLogout = async () => {
+  try {
+    await dispatch(logoutUser()).unwrap();
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'sessionid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'csrftoken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    navigate('/');
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Принудительный редирект даже при ошибке
+    navigate('/');
+  }
+};
 
   return (
     <Layout style={layoutStyle}>

@@ -6,7 +6,7 @@ router = DefaultRouter()
 router.register(r'files', FileViewSet, basename='file')
 
 urlpatterns = [
-    path('files/list/<username>/', FileViewSet.as_view({'get': 'list'})),
+    path('files/list/<username>/', FileViewSet.as_view({'get': 'list'}), name='file-list'),
     path('files/', FileViewSet.as_view({'post': 'create'}),name='file-upload'),
     path('files/<int:pk>/', FileViewSet.as_view({
         'get': 'retrieve',

@@ -1,65 +1,45 @@
 import axios from 'axios';
-// import { store } from '../redux/store';
-
-const pendingRequests = new Map();
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   withCredentials: true,
-})
+});
+
+// Отслеживаем только POST/PUT/PATCH/DELETE запросы
+// const pendingRequests = new Set();
 
 api.interceptors.request.use(async (config) => {
-  const requestKey = `${config.method?.toUpperCase()}|${config.url}|${JSON.stringify(config.params)}|${JSON.stringify(config.data)}`;
-
-  if (pendingRequests.has(requestKey)) {
-    return Promise.reject(new axios.Cancel('Duplicate request blocked'));
+  // Исключаем CSRF и auth-запросы из проверки
+  if (config.url?.includes('/csrf/') || 
+      config.url?.includes('/login/') || 
+      config.url?.includes('/logout/')) {
+    return config;
   }
 
-  pendingRequests.set(requestKey, true);
-
-  const source = axios.CancelToken.source();
-  config.cancelToken = source.token;
-
-
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(config.method?.toLowerCase() ?? '')) {
-    try {
-      const csrfResponse = await axios.get('/api/csrf/', { 
-        withCredentials: true 
-      });
-      config.headers['X-CSRFToken'] = csrfResponse.data.csrfToken
-    } catch (error) {
-      pendingRequests.delete(requestKey);
-      source.cancel('CSRF token request failed');
-      return Promise.reject(error);
+  // Для изменяющих методов добавляем CSRF
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method?.toUpperCase() ?? '')) {
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrftoken='))
+      ?.split('=')[1];
+      
+    if (csrfToken) {
+      config.headers['X-CSRFToken'] = csrfToken;
     }
   }
-  return config
-})
+
+  return config;
+});
 
 api.interceptors.response.use(
-  (response) => {
-    const requestKey = `${response.config.method?.toUpperCase()}|${response.config.url}|${JSON.stringify(response.config.params)}|${JSON.stringify(response.config.data)}`;
-    pendingRequests.delete(requestKey);
-    return response;
-  },
-  (error) => {
-    if (axios.isCancel(error)) {
-      console.log('Cancelled request:', error.message);
-      return Promise.reject(error);
-    }
-
-    if (error.config?.cancelToken) {
-      const requestKey = `${error.config.method?.toUpperCase()}|${error.config.url}|${JSON.stringify(error.config.params)}|${JSON.stringify(error.config.data)}`;
-      pendingRequests.delete(requestKey);
-    }
-
-    if (error.response?.status === 401) {
-      console.log('Authentication failed, redirecting to login...');
+  response => response,
+  error => {
+    if (error.response?.status === 401 && !error.config.url.includes('/logout/')) {
+      console.log('Redirecting to login due to 401 error');
       window.location.href = '/login';
     }
-
     return Promise.reject(error);
   }
 );
 
-export default api
+export default api;

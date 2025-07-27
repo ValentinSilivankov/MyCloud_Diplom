@@ -128,3 +128,18 @@ class FileViewSet(viewsets.ModelViewSet):
         # return response
         return FileResponse(file.file.open('rb'), as_attachment=True, filename=file.file_name)
 
+    def list(self, request, username=None):
+        if username:
+            if request.user.is_staff:
+                # Для админа - файлы любого пользователя
+                user = get_object_or_404(User, username=username)
+                queryset = user.files.all()
+            else:
+                # Для обычного пользователя - только свои файлы
+                queryset = request.user.files.all()
+        else:
+            # Если username не указан - возвращаем файлы текущего пользователя
+            queryset = request.user.files.all()
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

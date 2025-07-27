@@ -27,26 +27,43 @@ export default function FileUploader({ setShowForm }: FileUploaderProps) {
     }
   };
 
+  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+
+  //   if (file) {
+  //     const formData = new FormData();
+  //     // formData.append("user", String(storageOwner?.id));
+  //     formData.append("file", file);
+  //     formData.append("comment", comment || '');
+
+  //     dispatch(uploadFile(formData))
+  //       .unwrap()
+  //       .then(() => {
+  //         console.log("Файл успешно загружен");
+  //         setComment("");
+  //         setShowForm(false);
+  //         dispatch(getFilesList(storageOwner?.username));
+  //       })
+  //       .catch((error) => console.log(error));
+  //   }
+  // };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  e.preventDefault();
+  if (!file) return;
 
-    if (file) {
-      const formData = new FormData();
-      // formData.append("user", String(storageOwner?.id));
-      formData.append("file", file);
-      formData.append("comment", comment || '');
+  const formData = new FormData();
+  formData.append("file", file);
+  if (comment) formData.append("comment", comment);
 
-      dispatch(uploadFile(formData))
-        .unwrap()
-        .then(() => {
-          console.log("Файл успешно загружен");
-          setComment("");
-          setShowForm(false);
-          dispatch(getFilesList(storageOwner?.username));
-        })
-        .catch((error) => console.log(error));
-    }
-  };
+  try {
+    await dispatch(uploadFile(formData)).unwrap();
+    dispatch(getFilesList(storageOwner?.username));
+    setShowForm(false);
+  } catch (error) {
+    console.error('Upload failed:', error);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit}>

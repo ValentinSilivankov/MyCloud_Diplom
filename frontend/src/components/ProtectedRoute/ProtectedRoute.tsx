@@ -1,36 +1,59 @@
-import { useEffect, useRef } from 'react';
+import { 
+  useEffect, 
+  // useRef
+ } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks';
-import { checkAuth } from '../../services/userServices';
+import { checkAuth,
+  //  logoutUser
+   } from '../../services/userServices';
 import Loading from '../Loading/Loading';
 
 export default function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { isAuthenticated, authChecked } = useAppSelector(state => state.users);
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
+  const { 
+    isAuthenticated, 
+    authChecked,
+    isLoading,
+    // error
+  } = useAppSelector(state => state.users);
+  
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const location = useLocation();
-  const authCheckedRef = useRef(false);
+  // const authCheckedRef = useRef(false);
 
-  // useEffect(() => {
-  //   dispatch(checkAuth())
-  //     .unwrap()
-  //     .catch(() => navigate('/login'))
-  // }, [dispatch, navigate])
-
-  // return children
-
+  // Основной эффект для проверки аутентификации
   useEffect(() => {
-    if (!authChecked && !authCheckedRef.current) {
-      authCheckedRef.current = true;
+    if (!authChecked) {
+      // authCheckedRef.current = true;
       dispatch(checkAuth())
         .unwrap()
         .catch(() => {
-          navigate('/login', { state: { from: location }, replace: true });
-        });
+          
+          navigate('/login', { 
+            state: { from: location }, 
+            replace: true 
+          });
+        }
+      );
     }
-  }, [dispatch, navigate, authChecked, location]);
+  }, [dispatch, navigate, location, authChecked, isAuthenticated, isLoading]);
 
-  if (!authChecked) {
+// useEffect(() => {
+//   if (error) {
+//     dispatch(logoutUser())
+//       .unwrap()
+//       .finally(() => {
+//         navigate('/', {
+//           state: { from: location },
+//           replace: true
+//         });
+//       });
+//   }
+// }, [error, dispatch, navigate, location]);
+
+
+  if (!authChecked || isLoading) {
     return <Loading />;
   }
 

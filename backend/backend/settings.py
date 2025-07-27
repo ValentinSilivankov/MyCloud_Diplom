@@ -22,9 +22,9 @@ environ.Env.read_env(BASE_DIR.joinpath('.env'))
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
 
 # ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+DEBUG = env.list('DEBUG')
 
 # ALLOWED_HOSTS = [
 #     'localhost',  
@@ -57,11 +57,14 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'users.middleware.CustomCsrfMiddleware',
+    'users.middleware.KnoxAuthMiddleware',
+    # 'knox.middleware.AuthTokenMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -153,33 +156,26 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5000",
     "http://127.0.0.1:5000",
 ]
-# CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_EXPOSE_HEADERS = ['Set-Cookie']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
-# CORS_ALLOW_HEADERS = [
-#     'accept',
-#     'authorization',
-#     'content-type',
-#     'user-agent',
-#     'x-csrftoken',
-#     'x-requested-with',
-# ]
-
-# CORS_ALLOW_METHODS = [
-#     'GET',
-#     'OPTIONS',
-#     'POST',
-#     'PATCH',
-#     'PUT',
-#     'DELETE',
-# ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'users.authentication.KnoxCookieAuthentication',
+        'knox.auth.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        # 'knox.auth.TokenAuthentication',
     ],
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -194,7 +190,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# KNOX_TOKEN_MODEL = 'knox.AuthToken'
 
 REST_KNOX = {
     'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
@@ -204,20 +199,28 @@ REST_KNOX = {
     'TOKEN_LIMIT_PER_USER': None,
     'AUTO_REFRESH': False,
     'MIN_REFRESH_INTERVAL': 60,
-    'AUTH_HEADER_PREFIX': 'Bearer',
+    'AUTH_HEADER_PREFIX': 'Token',
     'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
     'TOKEN_MODEL': 'knox.AuthToken',
+    'COOKIE_DOMAIN': None,
+    'COOKIE_PATH': '/',
+    'COOKIE_NAME': 'auth_token',
+    'COOKIE_HTTPONLY': True,
+    'COOKIE_SECURE': not DEBUG,
+    'COOKIE_SAMESITE': 'Lax',
 }
 
+# SESSION settings
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
+# CSRF settings
+CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_SAMESITE = 'Lax'
-# CSRF_USE_SESSIONS = False
-CSRF_COOKIE_NAME = "csrftoken"
-CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5000', 'http://127.0.0.1:5000']
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy()
+
