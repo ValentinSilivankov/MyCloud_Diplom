@@ -4,21 +4,27 @@ import axios from 'axios';
 const pendingRequests = new Map();
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 })
 
 api.interceptors.request.use(async (config) => {
   const requestKey = `${config.method?.toUpperCase()}|${config.url}|${JSON.stringify(config.params)}|${JSON.stringify(config.data)}`;
 
-  if (pendingRequests.has(requestKey)) {
-    return Promise.reject(new axios.Cancel('Duplicate request blocked'));
+  if (config.method?.toUpperCase() === 'GET' || !pendingRequests.has(requestKey)) {
+    pendingRequests.set(requestKey, true);
+    const source = axios.CancelToken.source();
+    config.cancelToken = source.token;
   }
 
-  pendingRequests.set(requestKey, true);
+  // if (pendingRequests.has(requestKey)) {
+  //   return Promise.reject(new axios.Cancel('Duplicate request blocked'));
+  // }
 
-  const source = axios.CancelToken.source();
-  config.cancelToken = source.token;
+  // pendingRequests.set(requestKey, true);
+
+  // const source = axios.CancelToken.source();
+  // config.cancelToken = source.token;
 
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(config.method?.toLowerCase() ?? '')) {
@@ -29,7 +35,7 @@ api.interceptors.request.use(async (config) => {
       config.headers['X-CSRFToken'] = csrfResponse.data.csrfToken
     } catch (error) {
       pendingRequests.delete(requestKey);
-      source.cancel('CSRF token request failed');
+      // source.cancel('CSRF token request failed');
       return Promise.reject(error);
     }
   }

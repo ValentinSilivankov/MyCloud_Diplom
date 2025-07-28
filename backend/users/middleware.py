@@ -1,31 +1,42 @@
 from django.middleware.csrf import CsrfViewMiddleware
 from django.http import JsonResponse
 from knox.auth import TokenAuthentication
+from rest_framework.permissions import AllowAny
+from django.utils.deprecation import MiddlewareMixin
 
 class CustomCsrfMiddleware(CsrfViewMiddleware):
     def process_view(self, request, callback, callback_args, callback_kwargs):
-        if request.path.startswith('/api/') and 'auth_token' in request.COOKIES:
-            return None
+    
+        if (request.path.startswith('/api/') and 
+            ('auth_token' in request.COOKIES or
+             getattr(callback, 'permission_classes', None) == [AllowAny])):
+            return self._accept(request)
+        
         return super().process_view(request, callback, callback_args, callback_kwargs)
-    
-    def _accept(self, request):
-        request.csrf_processing_done = True
-        return None
-    
-class KnoxAuthMiddleware:
+
+class KnoxAuthMiddleware(MiddlewareMixin):
     def __init__(self, get_response):
         self.get_response = get_response
+        self.auth = TokenAuthentication()
         
     def __call__(self, request):
-        if request.path.startswith('/api/'):
-            auth = TokenAuthentication()
-            try:
-                user_auth_tuple = auth.authenticate(request)
-                if user_auth_tuple:
-                    request.user, _ = user_auth_tuple
-            except Exception:
-                return JsonResponse(
-                    {'detail': 'Invalid token'}, 
-                    status=401
-                )
+
+        if request.path == '/api/user/logout/':
+            return self.get_response(request)
+        
+        is_api_path = request.path.startswith('/api/')
+        is_allowed = getattr(request.resolver_match, 'permission_classes', None) == [AllowAny]
+        
+        if not is_api_path or is_allowed:
+            return self.get_response(request)
+            
+        try:
+            # Пробуем аутентифицировать через куки или заголовок
+            auth_result = self.auth.authenticate(request)
+            if auth_result is not None:
+                request.user, request.auth = auth_result
+        except Exception as e:
+            
+            pass
+            
         return self.get_response(request)

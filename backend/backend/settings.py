@@ -155,31 +155,31 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_EXPOSE_HEADERS = ['Set-Cookie']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 
-# CORS_ALLOW_HEADERS = [
-#     'accept',
-#     'authorization',
-#     'content-type',
-#     'user-agent',
-#     'x-csrftoken',
-#     'x-requested-with',
-# ]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'authorization',
+    'content-type',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
-# CORS_ALLOW_METHODS = [
-#     'GET',
-#     'OPTIONS',
-#     'POST',
-#     'PATCH',
-#     'PUT',
-#     'DELETE',
-# ]
+CORS_ALLOW_METHODS = [
+    'GET',
+    'OPTIONS',
+    'POST',
+    'PATCH',
+    'PUT',
+    'DELETE',
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'users.authentication.KnoxCookieAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        # 'knox.auth.TokenAuthentication',
+        'knox.auth.TokenAuthentication',
     ],
      'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -204,20 +204,30 @@ REST_KNOX = {
     'TOKEN_LIMIT_PER_USER': None,
     'AUTO_REFRESH': False,
     'MIN_REFRESH_INTERVAL': 60,
-    'AUTH_HEADER_PREFIX': 'Bearer',
+    'AUTH_HEADER_PREFIX': 'Token',
     'EXPIRY_DATETIME_FORMAT': api_settings.DATETIME_FORMAT,
     'TOKEN_MODEL': 'knox.AuthToken',
+    'COOKIE_DOMAIN': None,
+    'COOKIE_PATH': '/',
+    'COOKIE_NAME': 'auth_token',
+    'COOKIE_HTTPONLY': True,
+    'COOKIE_SECURE': not DEBUG,
+    'COOKIE_SAMESITE': 'Lax',
 }
 
+# SESSION settings
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
+# CSRF settings
+CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 # CSRF_USE_SESSIONS = False
 CSRF_COOKIE_NAME = "csrftoken"
 CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5000', 'http://127.0.0.1:5000']
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy()

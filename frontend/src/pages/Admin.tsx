@@ -4,6 +4,7 @@ import { Card, Table, TableProps, Alert, Switch, Flex, FloatButton, Tooltip } fr
 import { DeleteOutlined, FolderOpenOutlined, LeftOutlined } from '@ant-design/icons'
 import { formatFileSize, useAppDispatch, useAppSelector } from '../hooks'
 import {
+  clearError,
     // clearUsersList,
     // clearError,
     // setStorageOwner,
@@ -31,13 +32,16 @@ export default function Admin() {
     const navigate = useNavigate();
 
     useEffect(() => {
+      if (!isLoading && usersList.length === 0) {
         dispatch(getUsersList());
+      }
+        // dispatch(getUsersList());
             
         // return () => {
         //   dispatch(clearUsersList());
         //   dispatch(clearError());
         // };
-      }, [dispatch]);
+    }, [dispatch, isLoading, usersList.length]);
 
     // useEffect(() => {
     //     if (error) {
@@ -63,15 +67,15 @@ export default function Admin() {
     };
     
     const handleChangeStatus = (id: number, is_staff: boolean) => {
-        // const newUserData = { id, is_staff: !is_staff };
+        const newUserData = { id, is_staff: !is_staff };
     
-        // dispatch(updateUser(newUserData))
-        //     .unwrap()
-        //     .then(() => {
-        //         console.log("Статус пользователя успешно изменён");
-        //         dispatch(getUsersList());
-        //     })
-        //     .catch((error) => console.log(error));
+        dispatch(updateUser(newUserData))
+            .unwrap()
+            .then(() => {
+                console.log("Статус пользователя успешно изменён");
+                dispatch(getUsersList());
+            })
+            .catch((error) => console.log(error));
         dispatch(updateUser({id, is_staff: !is_staff}));
     };
     
@@ -191,7 +195,17 @@ export default function Admin() {
             title={<h1>Список пользователей</h1>}
             bordered={false}
         > 
-          {error && <Alert message={error} type='error' showIcon closable />}  //closable
+          {error && (
+            <Alert 
+            message={error.includes('Duplicate')
+              ? 'Повторный запрос был пропущен'
+              : error} 
+            type='error' 
+            showIcon 
+            closable
+            onClose={() => dispatch(clearError())} 
+            />
+            )}
           <Table 
           loading={isLoading} 
           dataSource={usersList} 

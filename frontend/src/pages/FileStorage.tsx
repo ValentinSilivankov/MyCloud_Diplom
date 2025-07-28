@@ -17,7 +17,7 @@ import { formatFileSize, useAppDispatch, useAppSelector } from '../hooks'
 import { IChangeFileData, IDownloadFileData, IFile } from '../models'
 import DownloadSection from '../components/DownloadSection/DownloadSection'
 import { changeFile, deleteFile, downloadFile, getFileLink, getFilesList } from '../services/fileServices'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 function copyToClipboard(special_link: string) {
   const textArea = document.createElement('textarea');
@@ -37,22 +37,23 @@ export default function StoragePage() {
   const dispatch = useAppDispatch(); 
   const navigate = useNavigate();
   const requestSent = useRef(false);
+  const { username } = useParams();
 
   useEffect(() => {
-    if (authChecked && isAuthenticated && !requestSent.current) {
-      const targetUsername = storageOwner?.username || currentUser?.username;
-      if (targetUsername) {
-        requestSent.current =true;
-        dispatch(getFilesList(targetUsername))
-          .finally(() => {
-            requestSent.current = false;
-          });
-      }
-    } else if (authChecked && !isAuthenticated) {
-      navigate('/login');
-    }
-    }, [dispatch, navigate, isAuthenticated, authChecked, storageOwner, currentUser]);
-  
+        if (authChecked && isAuthenticated) {
+            const targetUsername = username || storageOwner?.username || currentUser?.username;
+            if (targetUsername && !requestSent.current) {
+                requestSent.current = true;
+                dispatch(getFilesList(targetUsername))
+                    .finally(() => {
+                        requestSent.current = false;
+                    });
+            }
+        } else if (authChecked && !isAuthenticated) {
+            navigate('/login');
+        }
+    }, [dispatch, navigate, isAuthenticated, authChecked, storageOwner, currentUser, username]);
+    
   //   if (storageOwner?.username) {
   //     dispatch(getFilesList(storageOwner.username));
   //   }

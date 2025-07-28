@@ -1,14 +1,21 @@
 // import axios, { AxiosRequestConfig } from 'axios'
 import { createAsyncThunk } from '@reduxjs/toolkit'
 import { IChangeFileData, IDownloadFileData } from '../models';
-import api from './api'
+import api from '../services/api';
+import { RootState } from '../redux/store';
 
 // const BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export const getFilesList = createAsyncThunk(
     'files/getlist',
-    async (username: string | undefined, { rejectWithValue }) => {
+    async (username: string | undefined, { rejectWithValue, getState }) => {
         try {
+            const state = getState() as RootState;
+            const targetUsername = username || state.users.currentUser?.username;
+            
+            if (!targetUsername) {
+                return rejectWithValue('Username not specified');
+            }
             const response = await api.get(`/files/list/${username}/`)
 
             // const config = {
