@@ -135,6 +135,7 @@ const usersSlice = createSlice({
         state.usersList = action.payload.map((user: IUserForAdmin) => ({
           ...user,
           key: user.id.toString(),
+          files_count: user.files?.length || 0
         }));
       })
       .addCase(getUsersList.rejected, (state, action) => {

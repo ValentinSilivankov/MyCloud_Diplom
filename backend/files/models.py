@@ -61,6 +61,7 @@ class File(models.Model):
     special_link = models.CharField(blank=True, default='', max_length=255, verbose_name='Специальная ссылка')
 
     def save(self, *args, **kwargs):
+        
         # if self.file_name:
         #     self_file_name = '_'.join(self.file_name.split())
         #     original_file_name = '_'.join(os.path.basename(self.file.name).split())
@@ -84,6 +85,10 @@ class File(models.Model):
         if not self.pk:
             self.size = self.file.size
             self.file_name = os.path.basename(self.file.name)
+
+            if not self.file.name.startswith(self.user.username):
+                self.file.name = f"{self.user.username}/{self.file.name}"
+
         super().save(*args, **kwargs)
 
     class Meta:

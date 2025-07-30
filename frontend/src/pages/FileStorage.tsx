@@ -197,27 +197,52 @@ export default function StoragePage() {
       });
   };
 
-  const handleDeleteFile = (id: number) => {
-    if (confirm('Вы действительно хотите удалить файл?')) {
-      dispatch(deleteFile(id))
-        .unwrap()
-        .then(() => {
-          console.log('Файл успешно удалён');
-          message.success({
-            content: 'Файл успешно удалён',
-            duration: 2,
-          });
-          dispatch(getFilesList(storageOwner?.username));
-        })
-        .catch((error) => {
-          console.log(error);
-          message.error({
-            content: 'Ошибка удаления файла: ' + error,
-            duration: 2,
-          });
-        });
+  // const handleDeleteFile = (id: number) => {
+  //   if (confirm('Вы действительно хотите удалить файл?')) {
+  //     const targetUsername = username || storageOwner?.username || currentUser?.username;
+  //     dispatch(deleteFile(id))
+  //       .unwrap()
+  //       .then(() => {
+  //         console.log('Файл успешно удалён');
+  //         message.success({
+  //           content: 'Файл успешно удалён',
+  //           duration: 2,
+  //         });
+  //         if (targetUsername){
+  //         dispatch(getFilesList(storageOwner?.username));
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         console.log(error);
+  //         message.error({
+  //           content: 'Ошибка удаления файла: ' + error,
+  //           duration: 2,
+  //         });
+  //       });
+  //   }
+  // };
+
+  const handleDeleteFile = async (id: number) => {
+  if (confirm('Вы действительно хотите удалить файл?')) {
+    try {
+      await dispatch(deleteFile(id)).unwrap();
+      
+      // Явно указываем чей список обновлять (из URL или хранилища)
+      const targetUsername = username || storageOwner?.username;
+      if (!targetUsername) {
+        throw new Error('Не удалось определить пользователя');
+      }
+
+      // Только один запрос на обновление
+      await dispatch(getFilesList(targetUsername)).unwrap();
+      
+      message.success('Файл успешно удалён');
+    } catch (error) {
+      message.error('Ошибка при удалении файла');
+      console.error('Delete error:', error);
     }
-  };
+  }
+};
 
   const columns: TableProps<IFile>['columns'] = [
     {
@@ -342,7 +367,7 @@ export default function StoragePage() {
       className='card'
       title={currentUser?.id === storageOwner?.id ? 
         <h1>Ваше файловое хранилище</h1> :
-        <h1>Файлы пользователя "{storageOwner?.username || currentUser?.username}"</h1>
+        <h1>Файлы пользователя "{username || storageOwner?.username || currentUser?.username}"</h1>
       }
       bordered={false}
     >

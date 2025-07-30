@@ -25,7 +25,12 @@ export default function FileUploader({ setShowForm }: FileUploaderProps) {
     if (files && files.length > 0) {
       setFile(files[0]);
     }
+
+    
+
+
   };
+  
 
   // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   //   e.preventDefault();
@@ -54,11 +59,16 @@ export default function FileUploader({ setShowForm }: FileUploaderProps) {
 
   const formData = new FormData();
   formData.append("file", file);
-  if (comment) formData.append("comment", comment);
+  formData.append("comment", comment || '');
+
+  if (isLoading) return;
 
   try {
     await dispatch(uploadFile(formData)).unwrap();
+    await dispatch(getFilesList(storageOwner?.username));
     dispatch(getFilesList(storageOwner?.username));
+    setComment("");
+    setFile(null);
     setShowForm(false);
   } catch (error) {
     console.error('Upload failed:', error);

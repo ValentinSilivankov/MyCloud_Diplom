@@ -51,7 +51,12 @@ class FileViewSet(viewsets.ModelViewSet):
     #     return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        target_username = self.request.data.get('target_user')
+        if target_username and self.request.user.is_staff:
+            target_username = get_object_or_404(User, username=target_username)
+            serializer.save(user=target_username)
+        else:
+            serializer.save(user=self.request.user)
 
     # def partial_update(self, request, pk=None, *args, **kwargs):
     #     file = get_object_or_404(self.queryset, pk=pk)
@@ -143,3 +148,16 @@ class FileViewSet(viewsets.ModelViewSet):
             
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Проверка прав (админ или владелец)
+        if not request.user.is_staff and request.user != instance.user:
+            return Response(
+                {"error": "Вы можете удалять только свои файлы"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)

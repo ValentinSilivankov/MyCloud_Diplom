@@ -17,7 +17,8 @@ urlpatterns = [
     path('files/link/<int:pk>/', FileViewSet.as_view({'get': 'get_link'}), name='file_link'),
     path('files/share/<uuid:pk>/', FileViewSet.as_view({'get': 'share_file'}), name='file-share'),
     # path('', upload_file, name='file-upload'),
-]
+    path('upload-to/<str:username>/', FileViewSet.as_view({'post': 'create'}), name='file-upload-to'),
+] + router.urls
 
 # urlpatterns = [
 #     path('files/download/<int:pk>/', FileViewSet.as_view({'get': 'download'}), name='file-download'),
