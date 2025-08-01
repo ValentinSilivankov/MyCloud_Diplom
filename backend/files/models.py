@@ -58,7 +58,13 @@ class File(models.Model):
     size = models.PositiveIntegerField(blank=True, verbose_name='Размер')
     uploaded = models.DateTimeField(auto_now_add=True, verbose_name='Дата загрузки')
     downloaded = models.DateTimeField(blank=True, null=True, verbose_name='Дата скачивания')
-    special_link = models.CharField(blank=True, default='', max_length=255, verbose_name='Специальная ссылка')
+    special_link = models.CharField(
+        blank=True, 
+        default='',
+        max_length=255,
+        unique=True,
+        verbose_name='Специальная ссылка'
+        )
 
     def save(self, *args, **kwargs):
         

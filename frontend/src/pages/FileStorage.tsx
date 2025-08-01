@@ -19,15 +19,15 @@ import DownloadSection from '../components/DownloadSection/DownloadSection'
 import { changeFile, deleteFile, downloadFile, getFileLink, getFilesList } from '../services/fileServices'
 import { useNavigate, useParams } from 'react-router-dom'
 
-function copyToClipboard(special_link: string) {
-  const textArea = document.createElement('textarea');
-  textArea.value = special_link;
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand('copy');
-  document.body.removeChild(textArea);
-  console.log('Ссылка скопирована в буфер обмена');
-}
+// function copyToClipboard(special_link: string) {
+//   const textArea = document.createElement('textarea');
+//   textArea.value = special_link;
+//   document.body.appendChild(textArea);
+//   textArea.select();
+//   document.execCommand('copy');
+//   document.body.removeChild(textArea);
+//   console.log('Ссылка скопирована в буфер обмена');
+// }
 
 export default function StoragePage() {
   const { currentUser, storageOwner, isAuthenticated, authChecked } = useAppSelector(usersState);
@@ -177,25 +177,67 @@ export default function StoragePage() {
       })
   };
 
-  const handleGetFileLink = (id: number) => {
-    dispatch(getFileLink(id))
-      .unwrap()
-      .then((data) => {
-        console.log('Специальная ссылка на файл получена');
-        copyToClipboard(data.link);
-        message.success({
-          content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
-          duration: 2,
-        });
-      })
-      .catch((error) => {
-        console.log(error);
-        message.error({
-          content: 'Ошибка получения специальной ссылки на файл: ' + error,
-          duration: 2,
-        });
+  // const handleGetFileLink = (id: number) => {
+  //   dispatch(getFileLink(id))
+  //     .unwrap()
+  //     .then((data) => {
+  //       console.log('Специальная ссылка на файл получена');
+  //       copyToClipboard(data.link);
+  //       message.success({
+  //         content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
+  //         duration: 2,
+  //       });
+  //     })
+  //     .catch((error) => {
+  //       console.log(error);
+  //       message.error({
+  //         content: 'Ошибка получения специальной ссылки на файл: ' + error,
+  //         duration: 2,
+  //       });
+  //     });
+  // };
+
+  const handleGetFileLink = async (id: number) => {
+  try {
+    // 1. Делаем запрос к API
+    const response = await dispatch(getFileLink(id));
+    
+    // 2. Проверяем наличие данных
+    if (!response.payload) {
+      throw new Error('Пустой ответ от сервера');
+    }
+
+    // 3. Проверяем структуру ответа
+    const link = response.payload.link || response.payload.special_link;
+    if (!link) {
+      console.error('Неверная структура ответа:', response.payload);
+      throw new Error('Ссылка не найдена в ответе сервера');
+    }
+
+    // 4. Копируем в буфер
+    const textArea = document.createElement('textarea');
+    textArea.value = link;
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      message.success({
+        content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
+        duration: 5,
       });
-  };
+    } finally {
+      document.body.removeChild(textArea);
+    }
+
+  } catch (error) {
+    console.error('Полная ошибка:', error);
+    message.error({
+      content: 'Ошибка при получении ссылки',
+      duration: 3,
+    });
+  }
+};
 
   // const handleDeleteFile = (id: number) => {
   //   if (confirm('Вы действительно хотите удалить файл?')) {

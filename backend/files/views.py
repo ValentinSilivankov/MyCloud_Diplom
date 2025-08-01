@@ -89,14 +89,30 @@ class FileViewSet(viewsets.ModelViewSet):
     #     return Response({'special_link': link}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='share/(?P<pk>[^/.]+)')
-    def share_file(self, request, pk=None):
+    def share_file(self, request, code=None):
         try:
-            file = File.objects.get(special_link__contains=pk)
+            # file = File.objects.get(special_link__contains=pk)
+            file = File.objects.get(special_link=code)
             # file = self.get_object()
             file.downloaded = timezone.now()
             file.save()
             # return self.download(request, file.id)
-            return FileResponse(file.file.open('rb'), as_attachment=True, filename=file.file_name)
+
+            response = FileResponse(
+                file.file.open('rb'),
+                as_attachment=False,  # Измените на True если нужно скачивание
+                filename=file.file_name
+            )
+
+            response['Content-Disposition'] = f'inline; filename="{file.file_name}"'
+
+            return response
+
+            # return FileResponse(
+            #     file.file.open('rb'),
+            #     as_attachment=False,
+            #     filename=file.file_name)
+            
         
         except File.DoesNotExist:
             return Response(
@@ -110,12 +126,21 @@ class FileViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, file)
 
         if not file.special_link:
-            code = uuid.uuid4()
-            file.special_link = f"{request.build_absolute_uri('/')}api/files/share/{code}/"
+            code = uuid.uuid4().hex
+            file.special_link = code
+            # file.special_link = f"{request.build_absolute_uri('/')}api/files/share/{code}/"
             file.save()
+
+
+        full_url = request.build_absolute_uri(
+            f'/api/files/share/{file.special_link}/'
+        )
+
         return Response({
-            'link': file.special_link,
-            'id': file.id
+            'link' : full_url,
+            # 'link': file.special_link,
+            'id': file.id,
+            'code': file.special_link
             })
 
     @action(detail=True, methods=['get'])
