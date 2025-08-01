@@ -117,6 +117,7 @@ export default function StoragePage() {
 
   const handleDownloadFile = (id: number, file_name: string) => {
     const fileData : IDownloadFileData = { id, file_name };
+    const targetUsername = username || storageOwner?.username || currentUser?.username;
 
     dispatch(downloadFile(fileData))
       .unwrap()
@@ -126,7 +127,7 @@ export default function StoragePage() {
           content: 'Файл успешно скачан',
           duration: 2,
         });
-        dispatch(getFilesList(storageOwner?.username));
+        dispatch(getFilesList(targetUsername));
       })
       .catch((error) => {
         console.log(error);
