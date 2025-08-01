@@ -58,8 +58,12 @@ const FilesSlice = createSlice({
     builder
 
       .addCase(getFilesList.pending, (state) => {
-        state.isLoading = true;
-        state.error = '';
+        // state.isLoading = true;
+        // state.error = '';
+        if (!state.isLoading) {
+          state.isLoading = true;
+          state.error = '';
+        }
       })
       .addCase(getFilesList.fulfilled, (state, action) => {
         state.isLoading = false;

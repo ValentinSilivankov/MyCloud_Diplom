@@ -1,10 +1,11 @@
 import { CloudUploadOutlined, LeftOutlined, RollbackOutlined } from '@ant-design/icons'
 import { Flex, FloatButton, Tooltip } from 'antd'
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { useAppSelector } from '../../hooks'
+import { useCallback, useState } from 'react'
+import { useAppDispatch, useAppSelector } from '../../hooks'
 import { usersState } from '../../redux/slices/usersSlice'
 import FileUploader from '../FileUploader/FileUploader'
+import { getUsersList } from '../../services/userServices'
 
 const goBackStyle: React.CSSProperties = {
     position: 'absolute',
@@ -21,12 +22,19 @@ const uploadStyle: React.CSSProperties = {
 export default function DownloadSection() {
     const { currentUser } = useAppSelector(usersState);
     const [ showUploadForm, setShowUploadForm] = useState(false);
-    
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const handleGoBack = () => {
-        navigate('/admin');
-    };
+    // const handleGoBack = () => {
+    //     navigate('/admin');
+    // };
+
+    const handleGoBack = useCallback(() => {
+    // Перед возвратом обновляем список пользователей
+    dispatch(getUsersList()).then(() => {
+      navigate('/admin');
+    });
+  }, [dispatch, navigate]);
 
     return (
         <>        

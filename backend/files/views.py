@@ -51,7 +51,12 @@ class FileViewSet(viewsets.ModelViewSet):
     #     return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        target_username = self.request.data.get('target_user')
+        if target_username and self.request.user.is_staff:
+            target_username = get_object_or_404(User, username=target_username)
+            serializer.save(user=target_username)
+        else:
+            serializer.save(user=self.request.user)
 
     # def partial_update(self, request, pk=None, *args, **kwargs):
     #     file = get_object_or_404(self.queryset, pk=pk)
@@ -84,14 +89,30 @@ class FileViewSet(viewsets.ModelViewSet):
     #     return Response({'special_link': link}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='share/(?P<pk>[^/.]+)')
-    def share_file(self, request, pk=None):
+    def share_file(self, request, code=None):
         try:
-            file = File.objects.get(special_link__contains=pk)
+            # file = File.objects.get(special_link__contains=pk)
+            file = File.objects.get(special_link=code)
             # file = self.get_object()
             file.downloaded = timezone.now()
             file.save()
             # return self.download(request, file.id)
-            return FileResponse(file.file.open('rb'), as_attachment=True, filename=file.file_name)
+
+            response = FileResponse(
+                file.file.open('rb'),
+                as_attachment=False,  # Измените на True если нужно скачивание
+                filename=file.file_name
+            )
+
+            response['Content-Disposition'] = f'inline; filename="{file.file_name}"'
+
+            return response
+
+            # return FileResponse(
+            #     file.file.open('rb'),
+            #     as_attachment=False,
+            #     filename=file.file_name)
+            
         
         except File.DoesNotExist:
             return Response(
@@ -105,12 +126,21 @@ class FileViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, file)
 
         if not file.special_link:
-            code = uuid.uuid4()
-            file.special_link = f"{request.build_absolute_uri('/')}api/files/share/{code}/"
+            code = uuid.uuid4().hex
+            file.special_link = code
+            # file.special_link = f"{request.build_absolute_uri('/')}api/files/share/{code}/"
             file.save()
+
+
+        full_url = request.build_absolute_uri(
+            f'/api/files/share/{file.special_link}/'
+        )
+
         return Response({
-            'link': file.special_link,
-            'id': file.id
+            'link' : full_url,
+            # 'link': file.special_link,
+            'id': file.id,
+            'code': file.special_link
             })
 
     @action(detail=True, methods=['get'])
@@ -143,3 +173,16 @@ class FileViewSet(viewsets.ModelViewSet):
             
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Проверка прав (админ или владелец)
+        if not request.user.is_staff and request.user != instance.user:
+            return Response(
+                {"error": "Вы можете удалять только свои файлы"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -12,6 +12,8 @@ class FileSerializer(serializers.ModelSerializer):
             'size', 'uploaded', 'downloaded', 'special_link'
             ]
         extra_kwargs = {
+            'user': {'read_only': True},
+            'target_user': {'write_only': True},
             'special_link': {'read_only': True},
             'file': {'required': True},
             'comment': {'required': False, 'allow_blank': True}

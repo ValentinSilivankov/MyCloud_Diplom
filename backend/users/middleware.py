@@ -6,13 +6,12 @@ from django.utils.deprecation import MiddlewareMixin
 
 class CustomCsrfMiddleware(CsrfViewMiddleware):
     def process_view(self, request, callback, callback_args, callback_kwargs):
-        # Пропускаем CSRF проверку для:
-        # 1. API запросов с токеном
-        # 2. Эндпоинтов с AllowAny
+    
         if (request.path.startswith('/api/') and 
             ('auth_token' in request.COOKIES or
              getattr(callback, 'permission_classes', None) == [AllowAny])):
             return self._accept(request)
+        
         return super().process_view(request, callback, callback_args, callback_kwargs)
 
 class KnoxAuthMiddleware(MiddlewareMixin):
@@ -37,8 +36,7 @@ class KnoxAuthMiddleware(MiddlewareMixin):
             if auth_result is not None:
                 request.user, request.auth = auth_result
         except Exception as e:
-            # Не прерываем запрос при ошибке аутентификации
-            # DRF сам вернет 401 если потребуется
+            
             pass
             
         return self.get_response(request)

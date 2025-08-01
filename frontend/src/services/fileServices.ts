@@ -11,12 +11,13 @@ export const getFilesList = createAsyncThunk(
     async (username: string | undefined, { rejectWithValue, getState }) => {
         try {
             const state = getState() as RootState;
-            const targetUsername = username || state.users.currentUser?.username;
+            const targetUsername = username || state.users.storageOwner?.username || state.users.currentUser?.username;
             
             if (!targetUsername) {
                 return rejectWithValue('Username not specified');
             }
-            const response = await api.get(`/files/list/${username}/`)
+
+            const response = await api.get(`/files/list/${targetUsername}/`)
 
             // const config = {
             //     method: 'GET',
@@ -25,7 +26,7 @@ export const getFilesList = createAsyncThunk(
             // }
             // const response = await axios(config);
             // return await response.data;
-            return response.data
+            return response.data;
         } catch (error) {
             return rejectWithValue('Ошибка получения списка файлов: ' + error);
         }
@@ -127,6 +128,7 @@ export const downloadFile = createAsyncThunk(
 export const getFileLink = createAsyncThunk(
     'files/getLink',
     async (fileId: number, { rejectWithValue }) => {
+    
         try {
             const response = await api.get(`/files/link/${fileId}/`);
 

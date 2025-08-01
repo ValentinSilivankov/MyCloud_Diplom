@@ -6,7 +6,7 @@ router = DefaultRouter()
 router.register(r'files', FileViewSet, basename='file')
 
 urlpatterns = [
-    path('files/list/<username>/', FileViewSet.as_view({'get': 'list'}), name='file-list'),
+    path('files/list/<username>/', FileViewSet.as_view({'get': 'list'},name='file-list')),
     path('files/', FileViewSet.as_view({'post': 'create'}),name='file-upload'),
     path('files/<int:pk>/', FileViewSet.as_view({
         'get': 'retrieve',
@@ -15,9 +15,10 @@ urlpatterns = [
         }),name='file-detail'),
     path('files/download/<int:pk>/', FileViewSet.as_view({'get': 'download'}),name='file-download'),
     path('files/link/<int:pk>/', FileViewSet.as_view({'get': 'get_link'}), name='file_link'),
-    path('files/share/<uuid:pk>/', FileViewSet.as_view({'get': 'share_file'}), name='file-share'),
+    path('files/share/<str:code>/', FileViewSet.as_view({'get': 'share_file'}), name='file-share'),
     # path('', upload_file, name='file-upload'),
-]
+    path('upload-to/<str:username>/', FileViewSet.as_view({'post': 'create'}), name='file-upload-to'),
+] + router.urls
 
 # urlpatterns = [
 #     path('files/download/<int:pk>/', FileViewSet.as_view({'get': 'download'}), name='file-download'),

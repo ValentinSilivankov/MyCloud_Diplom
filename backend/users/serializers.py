@@ -23,6 +23,9 @@ class AdminSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'files')
         read_only_fields = ['id']
 
+    def get_files_count(self, obj):
+        return getattr(obj, 'files_count', 0)
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
