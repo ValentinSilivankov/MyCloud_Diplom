@@ -5,7 +5,7 @@ import {
   CloudDownloadOutlined,
   DeleteOutlined,
   ShareAltOutlined,
-  // FileSearchOutlined
+  FileSearchOutlined
 } from '@ant-design/icons'
 import { usersState } from '../redux/slices/usersSlice'
 import {
@@ -18,16 +18,6 @@ import { IChangeFileData, IDownloadFileData, IFile } from '../models'
 import DownloadSection from '../components/DownloadSection/DownloadSection'
 import { changeFile, deleteFile, downloadFile, getFileLink, getFilesList } from '../services/fileServices'
 import { useNavigate, useParams } from 'react-router-dom'
-
-// function copyToClipboard(special_link: string) {
-//   const textArea = document.createElement('textarea');
-//   textArea.value = special_link;
-//   document.body.appendChild(textArea);
-//   textArea.select();
-//   document.execCommand('copy');
-//   document.body.removeChild(textArea);
-//   console.log('Ссылка скопирована в буфер обмена');
-// }
 
 export default function StoragePage() {
   const { currentUser, storageOwner, isAuthenticated, authChecked } = useAppSelector(usersState);
@@ -54,36 +44,6 @@ export default function StoragePage() {
         }
     }, [dispatch, navigate, isAuthenticated, authChecked, storageOwner, currentUser, username]);
     
-  //   if (storageOwner?.username) {
-  //     dispatch(getFilesList(storageOwner.username));
-  //   }
-  // }, [dispatch, navigate, isAuthenticated, authChecked, storageOwner]);
-
-  // // Основная логика компонента
-  // if (isLoading) {
-  //   return <Loading />;
-  // }
-
-  // if (error) {
-  //   return <Alert message={error} type="error" />;
-  // }
-
-  // useEffect(() => {
-  //   dispatch(getFilesList(storageOwner?.username));
-
-  //   return () => {
-  //     dispatch(clearFilesList());
-  //     dispatch(clearError());
-  //   };
-  // }, [dispatch, storageOwner?.username]);
-
-  // useEffect(() => {
-  //   if (error) {
-  //       setShowAlert(true);
-  //   } else {
-  //       setShowAlert(false);
-  //   }
-  // }, [error]);
 
   const handleEditFileName = (id: number, file_name: string) => {
     const newFileName = prompt(
@@ -135,25 +95,25 @@ export default function StoragePage() {
     }
   };
 
-  // const handleFileSearchOutlined = (id:number) => {
-  //   dispatch(getFileLink(id))
-  // .unwrap()
-  // .then((data) => {
-  //   console.log('Специальная ссылка на файл получена');
-  //   copyToClipboard(data.special_link);
-  //   message.success({
-  //     content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
-  //     duration: 2,
-  //   });
-  // })
-  // .catch((error) => {
-  //   console.log(error);
-  //   message.error({
-  //     content: 'Ошибка получения специальной ссылки на файл: ' + error,
-  //     duration: 2,
-  //   });
-  // });
-  // }
+  const handleFileSearchOutlined = async (id:number) => {
+    try {
+      const response = await dispatch(getFileLink(id));
+
+      const link = response.payload.link || response.payload.special_link;
+      
+      const textArea = document.createElement('textarea');
+      textArea.value = link;
+
+      window.open(link, '_blank');
+
+    } catch (error) {
+      console.error('Полная ошибка:', error);
+      message.error({
+        content: 'Ошибка при получении ссылки',
+        duration: 3,
+      });
+    }
+  }
 
   const handleDownloadFile = (id: number, file_name: string) => {
     const fileData : IDownloadFileData = { id, file_name };
@@ -177,106 +137,56 @@ export default function StoragePage() {
       })
   };
 
-  // const handleGetFileLink = (id: number) => {
-  //   dispatch(getFileLink(id))
-  //     .unwrap()
-  //     .then((data) => {
-  //       console.log('Специальная ссылка на файл получена');
-  //       copyToClipboard(data.link);
-  //       message.success({
-  //         content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
-  //         duration: 2,
-  //       });
-  //     })
-  //     .catch((error) => {
-  //       console.log(error);
-  //       message.error({
-  //         content: 'Ошибка получения специальной ссылки на файл: ' + error,
-  //         duration: 2,
-  //       });
-  //     });
-  // };
-
-  const handleGetFileLink = async (id: number) => {
-  try {
-    // 1. Делаем запрос к API
-    const response = await dispatch(getFileLink(id));
-    
-    // 2. Проверяем наличие данных
-    if (!response.payload) {
-      throw new Error('Пустой ответ от сервера');
-    }
-
-    // 3. Проверяем структуру ответа
-    const link = response.payload.link || response.payload.special_link;
-    if (!link) {
-      console.error('Неверная структура ответа:', response.payload);
-      throw new Error('Ссылка не найдена в ответе сервера');
-    }
-
-    // 4. Копируем в буфер
-    const textArea = document.createElement('textarea');
-    textArea.value = link;
-    document.body.appendChild(textArea);
-    textArea.select();
-    
+  async function handleGetFileLink(id: number) {
     try {
-      document.execCommand('copy');
-      message.success({
-        content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
-        duration: 5,
-      });
-    } finally {
-      document.body.removeChild(textArea);
+
+      const response = await dispatch(getFileLink(id))
+
+      if (!response.payload) {
+        throw new Error('Пустой ответ от сервера')
+      }
+
+      const link = response.payload.link || response.payload.special_link
+      if (!link) {
+        console.error('Неверная структура ответа:', response.payload)
+        throw new Error('Ссылка не найдена в ответе сервера')
+      }
+
+      const textArea = document.createElement('textarea')
+      textArea.value = link
+      document.body.appendChild(textArea)
+      textArea.select()
+
+      try {
+        document.execCommand('copy')
+        message.success({
+          content: 'Специальная ссылка на файл получена и скопирована в буфер обмена',
+          duration: 5,
+        })
+      } finally {
+        document.body.removeChild(textArea)
+      }
+
+    } catch (error) {
+      console.error('Полная ошибка:', error)
+      message.error({
+        content: 'Ошибка при получении ссылки',
+        duration: 3,
+      })
     }
-
-  } catch (error) {
-    console.error('Полная ошибка:', error);
-    message.error({
-      content: 'Ошибка при получении ссылки',
-      duration: 3,
-    });
   }
-};
-
-  // const handleDeleteFile = (id: number) => {
-  //   if (confirm('Вы действительно хотите удалить файл?')) {
-  //     const targetUsername = username || storageOwner?.username || currentUser?.username;
-  //     dispatch(deleteFile(id))
-  //       .unwrap()
-  //       .then(() => {
-  //         console.log('Файл успешно удалён');
-  //         message.success({
-  //           content: 'Файл успешно удалён',
-  //           duration: 2,
-  //         });
-  //         if (targetUsername){
-  //         dispatch(getFilesList(storageOwner?.username));
-  //         }
-  //       })
-  //       .catch((error) => {
-  //         console.log(error);
-  //         message.error({
-  //           content: 'Ошибка удаления файла: ' + error,
-  //           duration: 2,
-  //         });
-  //       });
-  //   }
-  // };
 
   const handleDeleteFile = async (id: number) => {
   if (confirm('Вы действительно хотите удалить файл?')) {
     try {
       await dispatch(deleteFile(id)).unwrap();
       
-      // Явно указываем чей список обновлять (из URL или хранилища)
-      const targetUsername = username || storageOwner?.username;
+      const targetUsername = username || storageOwner?.username || currentUser?.username;
       if (!targetUsername) {
         throw new Error('Не удалось определить пользователя');
       }
 
-      // Только один запрос на обновление
-      await dispatch(getFilesList(targetUsername)).unwrap();
+      await dispatch(getFilesList(targetUsername));
       
       message.success('Файл успешно удалён');
     } catch (error) {
@@ -364,14 +274,14 @@ export default function StoragePage() {
       key: 'actions',
       render: (_, record) => (
         <Flex justify="space-evenly" align="center">
-          {/* <Tooltip 
+          <Tooltip 
             placement='top'
             title='Предварительный просмотр'
           >
             <Button
               icon={<FileSearchOutlined />}
               onClick={() => handleFileSearchOutlined(record.id)} />
-          </Tooltip> */}
+          </Tooltip>
 
           <Tooltip 
             placement='top'
